@@ -9,19 +9,19 @@ public class Constants {
     public static final int INDEX_COUNT = 4;
 
     public static final int[] ROOM_CAPACATIES = {
-            41,
-            22,
             20,
-            56,
+            22,
+            41,
             48,
-            117,
-            60
+            56,
+            60,
+            117
     };
 
     public static final String[] ROOM_NAMES = {
-        "A1.04",
-        "A1.06",
-        "A1.08",
+            "A1.08", //
+            "A1.06",
+            "A1.04",
         "A1.10",
         "B0.201",
         "C0.110",

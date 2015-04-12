@@ -1,7 +1,9 @@
 package nl.uva.heuristiek.model;
 
-import java.util.HashSet;
-import java.util.Set;
+import nl.uva.heuristiek.Constants;
+import nl.uva.heuristiek.Util;
+
+import java.util.*;
 
 /**
  * Created by remco on 07/04/15.
@@ -14,49 +16,142 @@ public class Course {
 
     private String mName;
 
-    private int mHoorcolleges;
-    private int mWorkGroups;
-    private int mPractica;
+    private int mLectureCount;
+    private int mWorkGroupCount;
+    private int mPracticumCount;
 
-    private int mMaxWerkcollgesStudenten;
-    private int mMaxPracticaStudenten;
-
-    private Activity[][] mActivities;
+    private int mGroupCount;
 
     private Set<Student> mStudents = new HashSet<Student>();
+    private ArrayList<Set<Student>> mStudentGroups;
+    private int mCourseId;
+    private Set<Activity> mActivities;
+    private boolean[] mDayUsed = new boolean[Constants.DAY_COUNT];
 
 
-    public Course(String[] csvRow) {
+    public Course(int courseId, String[] csvRow) {
+        mCourseId = courseId;
         mName = csvRow[0];
-        mHoorcolleges = Integer.parseInt(csvRow[1]);
-        mWorkGroups = Integer.parseInt(csvRow[2]);
-        mMaxWerkcollgesStudenten = Integer.parseInt(csvRow[3]);
-        mPractica = Integer.parseInt(csvRow[4]);
-        mMaxPracticaStudenten = Integer.parseInt(csvRow[5]);
+        mLectureCount = Util.tryParseInt(csvRow[1]);
+        mWorkGroupCount = Util.tryParseInt(csvRow[2]);
+        int workGroupCapacity = Util.tryParseInt(csvRow[3]);
+        mPracticumCount = Util.tryParseInt(csvRow[4]);
+        int practicumCapacity = Util.tryParseInt(csvRow[5]);
+        mGroupCount = Math.max(workGroupCapacity, practicumCapacity);
+    }
 
-        if (mHoorcolleges > 0) {
-            mActivities[TYPE_ACTIVITY_LECTURE] = new Activity[mHoorcolleges];
-        }
-        if (mWorkGroups > 0)
-            mActivities[TYPE_ACTIVITY_WORKGROUP] = new Activity[mWorkGroups];
+    public int getCourseId() {
+        return mCourseId;
+    }
+
+    public String getName() {
+        return mName;
+    }
+
+    public int getLectureCount() {
+        return mLectureCount;
+    }
+
+    public int getWorkGroupCount() {
+        return mWorkGroupCount;
+    }
+
+    public int getPracticumCount() {
+        return mPracticumCount;
     }
 
     public void addStudent(Student student) {
-        mActivities[TYPE_ACTIVITY_LECTURE][0].addStudent(student);
+        mStudents.add(student);
+    }
+
+    public void fillGroups() {
+        mStudentGroups = new ArrayList<Set<Student>>();
+        int groupSize = determineGroupSize();
+        Set<Student> currentGroup = new HashSet<Student>(groupSize);
+        for (Student student : mStudents) {
+            currentGroup.add(student);
+            if (currentGroup.size() == groupSize) {
+                mStudentGroups.add(currentGroup);
+                currentGroup = new HashSet<Student>(groupSize);
+            }
+        }
+        if (currentGroup.size() > 0) {
+            if (mStudentGroups.size() == 0) {
+                mStudentGroups.add(currentGroup);
+            } else {
+                Set<Student> lastGroup = mStudentGroups.get(mStudentGroups.size() - 1);
+                if (currentGroup.size() + lastGroup.size() < groupSize) {
+                    for (Student student : currentGroup) {
+                        lastGroup.add(student);
+                    }
+                } else {
+                    mStudentGroups.add(currentGroup);
+                }
+            }
+        }
+    }
+
+    public Set<Activity> getActivities() {
+        if (mStudentGroups == null) fillGroups();
+        if (mActivities == null) {
+            mActivities = new HashSet<Activity>();
+            for (int i = 0; i < mLectureCount; i++) {
+                mActivities.add(new Activity(TYPE_ACTIVITY_LECTURE, mStudents));
+            }
+            for (int i = 0; i < mWorkGroupCount; i++) {
+                for (Set<Student> students : mStudentGroups)
+                    mActivities.add(new Activity(TYPE_ACTIVITY_WORKGROUP, students));
+            }
+            for (int i = 0; i < mPracticumCount; i++) {
+                for (Set<Student> students : mStudentGroups)
+                    mActivities.add(new Activity(TYPE_ACTIVITY_PRACTICAL, students));
+            }
+        }
+        return mActivities;
+    }
+
+    private int determineGroupSize() {
+        return mGroupCount;
     }
 
     public Set<Student> getStudents() {
         return mStudents;
     }
 
-    public class Activity {
-        Set<Student> mStudents = new HashSet<Student>();
-        int mCapacity;
+    public ArrayList<Set<Student>> getStudentGroups() {
+        return mStudentGroups;
+    }
 
-        public boolean addStudent(Student student) {
-            if (mCapacity != -1 && mCapacity == mStudents.size()) return false;
-            mStudents.add(student);
-            return true;
+    public class Activity {
+        private int mType;
+        private Set<Student> mStudents;
+
+        public Activity(int type, Set<Student> students) {
+            mType = type;
+            mStudents = students;
+        }
+
+        public Set<Student> getStudents() {
+            return mStudents;
+        }
+
+        public void plan(int room, int day, int index) {
+            mDayUsed[day] = true;
+            for (Student student : mStudents) {
+                student.setBusy(day, index, Course.this);
+            }
+        }
+
+        public String getName() {
+            return mName;
+        }
+
+        boolean isDayUsed(int day) {
+            return mDayUsed[day];
+        }
+
+        public Course getCourse() {
+            return Course.this;
         }
     }
 }

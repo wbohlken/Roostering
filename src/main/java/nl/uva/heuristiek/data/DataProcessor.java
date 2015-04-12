@@ -16,27 +16,32 @@ import java.util.Map;
  * Created by remco on 08/04/15.
  */
 public class DataProcessor {
-    public static Map<String, Course> process(File input, File vakken) throws IOException {
-        CSVReader reader = new CSVReader(new FileReader(vakken));
-        String[] nextLine;
-        HashMap<String, Course> courseMap = new HashMap<String, Course>();
-        while ((nextLine = reader.readNext()) != null) {
-            courseMap.put(nextLine[0], new Course(nextLine));
-        }
-        reader.close();
+    public static Map<String, Course> process(File input, File vakken) {
+        try {
+            CSVReader reader = new CSVReader(new FileReader(vakken));
+            String[] nextLine;
+            HashMap<String, Course> courseMap = new HashMap<String, Course>();
+            int courseId = 0;
+            while ((nextLine = reader.readNext()) != null) {
+                courseMap.put(nextLine[0], new Course(courseId++, nextLine));
+            }
+            reader.close();
 
-        reader = new CSVReader(new FileReader(input));
+            reader = new CSVReader(new FileReader(input));
 
-        while ((nextLine = reader.readNext()) != null) {
-            for (int i = 3; i < nextLine.length; i++) {
-                Course course = courseMap.get(nextLine[i]);
-                if (course != null) {
-                    course.addStudent(new Student(nextLine));
+            while ((nextLine = reader.readNext()) != null) {
+                for (int i = 3; i < nextLine.length; i++) {
+                    Course course = courseMap.get(nextLine[i]);
+                    if (course != null) {
+                        course.addStudent(new Student(nextLine));
+                    }
                 }
             }
-        }
-        reader.close();
+            reader.close();
 
-        return courseMap;
+            return courseMap;
+        } catch (IOException e) {
+            return null;
+        }
     }
 }
