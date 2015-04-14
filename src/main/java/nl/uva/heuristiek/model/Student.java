@@ -2,27 +2,39 @@ package nl.uva.heuristiek.model;
 
 import nl.uva.heuristiek.Constants;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Student {
     String mStudentId, mFirstName, mLastName;
-    int[][] mTimeSlots;
+    List[] mTimeSlots;
 
     public Student(String[] csvRow) {
-        mTimeSlots = new int[Constants.DAY_COUNT][Constants.INDEX_COUNT];
+        mTimeSlots = new ArrayList[Constants.TIMESLOT_COUNT];
 
         mLastName = csvRow[0];
         mFirstName = csvRow[1];
         mStudentId = csvRow[2];
     }
 
-    public boolean isAvailable(int day, int index, Course c) {
-        boolean available = mTimeSlots[day][index] == 0;
-        for (int timeslot : mTimeSlots[day]) {
-            if (timeslot == c.getCourseId()) return false;
-        }
-        return available;
+    public Student(Student other) {
+        mStudentId = other.mStudentId;
+        mFirstName = other.mFirstName;
+        mLastName = other.mLastName;
+        mTimeSlots = new ArrayList[Constants.TIMESLOT_COUNT];
     }
 
-    public void setBusy(int day, int index, Course course) {
-        mTimeSlots[day][index] = course.getCourseId();
+    public boolean isAvailable(int timeSlot) {
+        return mTimeSlots[timeSlot] == null;
+    }
+
+    public int setBusy(Course course, int timeslot) {
+        int penalty = 0;
+        if (mTimeSlots[timeslot] != null && mTimeSlots[timeslot].size() >0)
+            penalty++;
+        else if (mTimeSlots[timeslot] == null)
+            mTimeSlots[timeslot] = new ArrayList();
+        mTimeSlots[timeslot].add(course.getCourseId());
+        return penalty;
     }
 }

@@ -5,10 +5,8 @@ import nl.uva.heuristiek.model.Course;
 import nl.uva.heuristiek.model.Student;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,9 +19,8 @@ public class DataProcessor {
             CSVReader reader = new CSVReader(new FileReader(vakken));
             String[] nextLine;
             HashMap<String, Course> courseMap = new HashMap<String, Course>();
-            int courseId = 0;
             while ((nextLine = reader.readNext()) != null) {
-                courseMap.put(nextLine[0], new Course(courseId++, nextLine));
+                courseMap.put(nextLine[1], new Course(nextLine));
             }
             reader.close();
 

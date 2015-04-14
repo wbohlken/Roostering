@@ -1,29 +1,29 @@
-Advanced Heuristics,1,0,,1,10
-Algoritmen en complexiteit,1,1,25,1,25
-Analysemethoden en -technieken,1,0,,0,
-Architectuur en computerorganisatie,2,0,,0,
-Autonomous Agents 2,2,1,10,1,10
-Bioinformatica,3,1,20,1,20
-Calculus 2,1,1,40,0,
-Collectieve Intelligentie,3,1,20,1,20
-Compilerbouw,2,1,40,1,40
-Compilerbouw (practicum),0,0,,1,15
-Data Mining,2,1,10,1,10
-Databases 2,1,1,40,0,
-Heuristieken 1,1,1,25,0,
-Heuristieken 2,1,1,20,0,
-Informatie- en organisatieontwerp,2,1,15,1,15
-Interactie-ontwerp,2,0,,0,
-Kansrekenen 2,2,0,,0,
-Lineaire Algebra,2,0,,0,
-Machine Learning,2,0,,0,
-Moderne Databases,1,1,20,1,20
-Netwerken en systeembeveiliging,0,0,,1,20
-Programmeren in Java 2,0,0,,1,20
-Project Genetic Algorithms,0,0,,1,15
-Project Numerical Recipes,0,0,,1,15
-Reflectie op de digitale cultuur,2,1,20,0,
-Software engineering,1,1,40,1,40
-Technology for games,2,1,20,0,
-Webprogrammeren en databases,2,1,20,1,20
-Zoeken, sturen en bewegen,0,0,,1,15
+AdH,Advanced Heuristics,1,0,,1,10
+AlC,Algoritmen en complexiteit,1,1,25,1,25
+AMT,Analysemethoden en -technieken,1,0,,0,
+ArC,Architectuur en computerorganisatie,2,0,,0,
+AuA,Autonomous Agents 2,2,1,10,1,10
+BiI,Bioinformatica,3,1,20,1,20
+Ca2,Calculus 2,1,1,40,0,
+CoI,Collectieve Intelligentie,3,1,20,1,20
+Com,Compilerbouw,2,1,40,1,40
+CoP,Compilerbouw (practicum),0,0,,1,15
+DaM,Data Mining,2,1,10,1,10
+Dbs,Databases 2,1,1,40,0,
+He1,Heuristieken 1,1,1,25,0,
+He2,Heuristieken 2,1,1,20,0,
+IeO,Informatie- en organisatieontwerp,2,1,15,1,15
+InO,Interactie-ontwerp,2,0,,0,
+Kan,Kansrekenen 2,2,0,,0,
+LiA,Lineaire Algebra,2,0,,0,
+MaL,Machine Learning,2,0,,0,
+MoD,Moderne Databases,1,1,20,1,20
+NeS,Netwerken en systeembeveiliging,0,0,,1,20
+Jav,Programmeren in Java 2,0,0,,1,20
+PrG,Project Genetic Algorithms,0,0,,1,15
+Prn,Project Numerical Recipes,0,0,,1,15
+Ref,Reflectie op de digitale cultuur,2,1,20,0,
+SoE,Software engineering,1,1,40,1,40
+TfG,Technology for games,2,1,20,0,
+WeD,Webprogrammeren en databases,2,1,20,1,20
+ZSB,Zoeken, sturen en bewegen,0,0,,1,15

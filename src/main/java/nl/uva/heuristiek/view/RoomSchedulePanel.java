@@ -11,13 +11,13 @@ import java.awt.*;
  */
 public class RoomSchedulePanel extends JPanel {
 
-    private final Course.Activity[][] mActivities;
+    private final Course.Activity[] mActivities;
 
-    public RoomSchedulePanel(Course.Activity[][] activities) {
+    public RoomSchedulePanel(Course.Activity[] activities, int room) {
         mActivities = activities;
         setLayout(new GridLayout(0, 5));
         for (int day = 0; day < Constants.DAY_COUNT; day++) {
-            add(new RoomDaySchedulePanel(mActivities[day]));
+            add(new RoomDaySchedulePanel(mActivities, room, day));
         }
         setSize(400, 300);
     }

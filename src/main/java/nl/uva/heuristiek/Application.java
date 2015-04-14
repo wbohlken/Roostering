@@ -8,13 +8,11 @@ import nl.uva.heuristiek.view.SchedulePanel;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class Application extends JFrame implements Schedule.ScheduleStateListener {
-    Course.Activity[][][] mScheduleState;
+    Course.Activity[] mScheduleState;
+    private int mSmallestPenalty = 2000;
 
     public Application() {
 
@@ -26,15 +24,15 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 
         File courses = new File("vakken.csv");
         File students = new File("studenten_roostering.csv");
-        Schedule schedule = new Schedule(this);
-        for (int room = 0; room < Constants.ROOM_COUNT; room++) {
-            SchedulePanel schedulePanel = new SchedulePanel(schedule);
-            add(schedulePanel);
-        }
         Map<String, Course> courseMap = DataProcessor.process(students, courses);
-        if (courseMap != null) {
+        Collection<Course> courseCollection = courseMap.values();
+        Schedule bestSchedule;
+        long loops = 0;
+        while (true) {
+            Collection<Course> clonedCourseCollection = Util.deepClone(courseCollection);
+            Schedule schedule = new Schedule(this);
             LinkedList<Course.Activity> activities = new LinkedList<Course.Activity>();
-            for (Course course : courseMap.values()) {
+            for (Course course : clonedCourseCollection) {
                 activities.addAll(course.getActivities());
             }
             Collections.sort(activities, new Comparator<Course.Activity>() {
@@ -43,8 +41,21 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 }
             });
 
-            schedule.planCourses(activities);
-
+            schedule.planCourses(clonedCourseCollection, activities);
+            if (schedule.getPenalty() < mSmallestPenalty) {
+                mSmallestPenalty = schedule.getPenalty();
+                bestSchedule = schedule;
+                if (mSmallestPenalty < 10) break;
+            }
+            System.out.printf("Loops: %d, Smallest penalty: %d\n ", loops++, mSmallestPenalty);
+        }
+        System.out.printf("Penalty: %d", bestSchedule.getPenalty());
+        for (Course.Activity activity : bestSchedule.getPenaltyActivities()) {
+            System.out.printf("Penalty for Activity in course %s", activity.getCourse().getCourseId());
+        }
+        for (int room = 0; room < Constants.ROOM_COUNT; room++) {
+            SchedulePanel schedulePanel = new SchedulePanel(bestSchedule);
+            add(schedulePanel);
         }
 
 
@@ -59,7 +70,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         });
     }
 
-    public void onStateCreated(Course.Activity[][][] state) {
+    public void onStateCreated(Course.Activity[] state) {
         mScheduleState = state;
         onStateChanged();
     }
@@ -67,5 +78,11 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     public void onStateChanged() {
         revalidate();
         repaint();
+    }
+
+    public void onScheduleComplete(int penalty, int totalActivities, int plannedActivities) {
+//        if (penalty < mSmallestPenalty)
+//            mSmallestPenalty = penalty;
+//        System.out.printf("Smallest penalty: %d, Total Activities: %d, Activities planned: %d\n", penalty, totalActivities, plannedActivities);
     }
 }
