@@ -10,18 +10,23 @@ import java.awt.*;
 import java.io.File;
 import java.util.*;
 
+import org.jfugue.player.Player;
+
 public class Application extends JFrame implements Schedule.ScheduleStateListener {
     Course.Activity[] mScheduleState;
+    Player mPlayer;
+
+    String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
+
     private int mSmallestPenalty = 2000;
 
     public Application() {
-
         setTitle("Simple example");
         setSize(1280, 1024);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-
+        mPlayer = new Player();
         File courses = new File("vakken.csv");
         File students = new File("studenten_roostering.csv");
         Map<String, Course> courseMap = DataProcessor.process(students, courses);
