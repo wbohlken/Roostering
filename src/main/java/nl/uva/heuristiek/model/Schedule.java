@@ -110,6 +110,24 @@ public class Schedule {
         return mPenalty;
     }
 
+    public int[] getRoomOccupation() {
+        int[] roomOccupation = new int[Constants.ROOM_COUNT];
+
+        for (int i = 0; i < (Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT); i++) {
+            if (mCourses[i] != null) {
+                roomOccupation[i / 20]++;
+            }
+        }
+
+        int[] roomOccupationPercentage = new int[Constants.ROOM_COUNT];
+
+        for (int i = 0; i < Constants.ROOM_COUNT; i++) {
+            roomOccupationPercentage[i] = roomOccupation[i] * 100 / 20;
+        }
+
+        return roomOccupationPercentage;
+    }
+
     public Course.Activity[] getActivities() {
         return mCourses;
     }
