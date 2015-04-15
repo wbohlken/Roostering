@@ -22,9 +22,10 @@ public class Course {
     private int mPracticumCount;
 
     private int mGroupCount;
-    private Set<Student> mStudents = new HashSet<Student>();
+    private Set<Student> mStudents = new HashSet<>();
+    private Set<Activity> mLectureActivities;
     private ArrayList<Set<Student>> mStudentGroups;
-    private Set<Activity> mActivities;
+    private Map<Integer, Set<Activity>> mGroupActivities;
     private boolean[][] mDayUsed;
     private Set<Activity> mPenaltyActivities;
 
@@ -50,23 +51,51 @@ public class Course {
         mStudents = Util.deepClone(other.mStudents);
     }
 
+    private int getTotalActivities() {
+        return mLectureCount+mWorkGroupCount+mPracticumCount;
+    }
+
+
     public int getPenalty() {
-        mPenaltyActivities = new HashSet<Activity>();
-        int penalty = 0;
-        if (mActivities != null) {
-            Set<Integer>[] d = new Set[5];
-            for (Activity activity : mActivities) {
-                if (d[activity.getDay()] == null) {
-                    d[activity.getDay()] = new HashSet<Integer>();
-                    d[activity.getDay()].add(activity.mId);
-                } else if (!d[activity.mTimeslot / 4].contains(activity.mId)) {
-                    penalty += 10;
-                    mPenaltyActivities.add(activity);
-                    d[activity.getDay()].add(activity.mId);
-                }
+        int activityPenalty = 0;
+        HashSet<Integer> lectureDays = new HashSet<>(5);
+        HashSet<Integer> days = new HashSet<>();
+        if (mLectureActivities != null) {
+            for (Activity activity : mLectureActivities) {
+                lectureDays.add(activity.getDay());
             }
         }
-        return penalty;
+        if (mStudentGroups == null || (mStudentGroups.size() == 1 && mLectureCount > 0)) {
+            activityPenalty += (mLectureCount - lectureDays.size())*10;
+        } else {
+            for (int i = 0; i < mStudentGroups.size(); i++) {
+                days.addAll(lectureDays);
+                if (mGroupActivities != null) {
+                    for (Activity activity : mGroupActivities.get(i))
+                        days.add(activity.getDay());
+                    activityPenalty += (getTotalActivities() - days.size()) * 10;
+                }
+                days.clear();
+            }
+        }
+
+        return activityPenalty;
+//        mPenaltyActivities = new HashSet<Activity>();
+//        int penalty = 0;
+//        if (mGroupActivities != null) {
+//            Set<Integer>[] d = new Set[5];
+//            for (Activity activity : mLectureActivities) {
+//                if (d[activity.getDay()] == null) {
+//                    d[activity.getDay()] = new HashSet<Integer>();
+//                    d[activity.getDay()].add(activity.mId);
+//                } else if (!d[activity.mTimeslot / 4].contains(activity.mId)) {
+//                    penalty += 10;
+//                    mPenaltyActivities.add(activity);
+//                    d[activity.getDay()].add(activity.mId);
+//                }
+//            }
+//        }
+//        return penalty;
     }
 
     public Set<Activity> getPanaltyActivities() {
@@ -125,27 +154,41 @@ public class Course {
     }
 
     public Set<Activity> getActivities() {
-        if (mStudents.size() == 0) return new HashSet<Activity>();
+        if (mStudents.size() == 0) return new HashSet<>();
         if (mStudentGroups == null) fillGroups();
         int activityId = 0;
-        if (mActivities == null) {
-            mActivities = new HashSet<Activity>();
+        Set<Activity> allActivities = new HashSet<>();
+        if (mGroupActivities == null) {
+            mLectureActivities = new HashSet<>();
+            mGroupActivities = new HashMap<>();
             for (int i = 0; i < mLectureCount; i++) {
-                mActivities.add(new Activity(TYPE_ACTIVITY_LECTURE, mStudents, activityId++));
+                Activity activity = new Activity(TYPE_ACTIVITY_LECTURE, mStudents, activityId++);
+                mLectureActivities.add(activity);
+                allActivities.add(activity);
             }
             for (int i = 0; i < mWorkGroupCount; i++) {
-                for (Set<Student> students : mStudentGroups)
-                    mActivities.add(new Activity(TYPE_ACTIVITY_WORKGROUP, students, activityId));
+                for (int j = 0; j < mStudentGroups.size(); j++) {
+                    if (!mGroupActivities.containsKey(j))
+                        mGroupActivities.put(j, new HashSet<>());
+                    Activity activity = new Activity(TYPE_ACTIVITY_WORKGROUP, mStudentGroups.get(j), activityId);
+                    mGroupActivities.get(j).add(activity);
+                    allActivities.add(activity);
+                }
                 activityId++;
             }
             for (int i = 0; i < mPracticumCount; i++) {
-                for (Set<Student> students : mStudentGroups)
-                    mActivities.add(new Activity(TYPE_ACTIVITY_PRACTICAL, students, activityId));
+                for (int j = 0; j < mStudentGroups.size(); j++) {
+                    if (!mGroupActivities.containsKey(j))
+                        mGroupActivities.put(j, new HashSet<>());
+                    Activity activity = new Activity(TYPE_ACTIVITY_PRACTICAL, mStudentGroups.get(j), activityId);
+                    mGroupActivities.get(j).add(activity);
+                    allActivities.add(activity);
+                }
                 activityId++;
             }
             mDayUsed = new boolean[activityId][Constants.DAY_COUNT];
         }
-        return mActivities;
+        return allActivities;
     }
 
     private int determineGroupSize() {
@@ -176,14 +219,12 @@ public class Course {
             return mStudents;
         }
 
-        public int plan(int timeslot) {
+        public void plan(int timeslot) {
             mTimeslot = timeslot;
-            int penalty = 0;
             mDayUsed[mId][timeslot /4] = true;
             for (Student student : mStudents) {
-                penalty += student.setBusy(Course.this, timeslot);
+                student.setBusy(this, timeslot);
             }
-            return penalty;
         }
 
         public int getDay() {
@@ -213,6 +254,10 @@ public class Course {
 
         public int getId() {
             return mId;
+        }
+
+        public int getTimeslot() {
+            return mTimeslot;
         }
     }
 }

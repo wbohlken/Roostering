@@ -8,19 +8,27 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by remco on 08/04/15.
  */
 public class DataProcessor {
+
+    private static Map<String, Course> mCourseMap;
+    private static Set<Student> mStudents;
+
     public static Map<String, Course> process(File input, File vakken) {
         try {
+            mCourseMap = new HashMap<>();
+            mStudents = new HashSet<>();
+
             CSVReader reader = new CSVReader(new FileReader(vakken));
             String[] nextLine;
-            HashMap<String, Course> courseMap = new HashMap<String, Course>();
             while ((nextLine = reader.readNext()) != null) {
-                courseMap.put(nextLine[1], new Course(nextLine));
+                mCourseMap.put(nextLine[1], new Course(nextLine));
             }
             reader.close();
 
@@ -28,17 +36,27 @@ public class DataProcessor {
 
             while ((nextLine = reader.readNext()) != null) {
                 for (int i = 3; i < nextLine.length; i++) {
-                    Course course = courseMap.get(nextLine[i]);
+                    Student student = new Student(nextLine);
+                    mStudents.add(student);
+                    Course course = mCourseMap.get(nextLine[i]);
                     if (course != null) {
-                        course.addStudent(new Student(nextLine));
+                        course.addStudent(student);
                     }
                 }
             }
             reader.close();
 
-            return courseMap;
+            return mCourseMap;
         } catch (IOException e) {
             return null;
         }
+    }
+
+    public static Map<String, Course> getCourseMap() {
+        return mCourseMap;
+    }
+
+    public static Set<Student> getStudents() {
+        return mStudents;
     }
 }

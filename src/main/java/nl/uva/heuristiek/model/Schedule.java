@@ -2,6 +2,7 @@ package nl.uva.heuristiek.model;
 
 import nl.uva.heuristiek.Constants;
 
+import java.security.SecureRandom;
 import java.util.*;
 
 /**
@@ -21,7 +22,7 @@ public class Schedule {
         listener.onStateCreated(mCourses);
     }
 
-    public void planCourses(final Collection<Course> courses, final LinkedList<Course.Activity> activities) {
+    public void planCourses(final Collection<Course> courses, final LinkedList<Course.Activity> activities, Set<Student> students) {
         int[] timeSlots = new int[20];
         for (int i = 0; i < timeSlots.length; i++) {
             timeSlots[i] = i;
@@ -34,6 +35,9 @@ public class Schedule {
         for (Course course : courses) {
             mPenalty += course.getPenalty();
         }
+        for (Student student : students) {
+            mPenalty += student.getPenalty();
+        }
 //                System.out.println(String.format("Total activities to plan: %d", activities.size()));
 //
 //                System.out.println(String.format("Activities planned: %d", mActivitiesPlanned));
@@ -44,7 +48,7 @@ public class Schedule {
 
     static void shuffleArray(int[] ar)
     {
-        Random rnd = new Random();
+        SecureRandom rnd = new SecureRandom();
         for (int i = ar.length - 1; i > 0; i--)
         {
             int index = rnd.nextInt(i + 1);
@@ -60,6 +64,10 @@ public class Schedule {
             if (students < Constants.ROOM_CAPACATIES[i]) return i;
         }
         throw new RuntimeException("No suitable room found");
+    }
+
+    private void calculatePenalty() {
+
     }
 
     private void planActivity(Course.Activity activity, int[] randomTimeslots) {
@@ -79,11 +87,7 @@ public class Schedule {
             }
         }
         mCourses[room*20+randomTimeslots[timeslotIndex]] = activity;
-        int penalty = activity.plan(randomTimeslots[timeslotIndex]);
-        mPenalty += penalty;
-        if (penalty > 0)
-            mPenaltyActivities.addAll(activity.getCourse().getPanaltyActivities());
-
+        activity.plan(randomTimeslots[timeslotIndex]);
         mActivitiesPlanned++;
     }
 
