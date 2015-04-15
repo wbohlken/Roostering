@@ -128,6 +128,29 @@ public class Schedule {
         return roomOccupationPercentage;
     }
 
+    public int[] getSeatOccupationPerRoom() {
+        int[] totalSeatOccupation = new int[Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT];
+        int[] seatOccupation = new int[Constants.ROOM_COUNT];
+
+        for (int i = 0; i < (Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT); i++) {
+            totalSeatOccupation[i] = 0;
+            int roomCapacity = Constants.ROOM_CAPACATIES[i/20];
+            if (mCourses[i] != null) {
+                totalSeatOccupation[i] = 100 * mCourses[i].getStudents().size() / roomCapacity;
+            }
+        }
+
+        for (int i = 0; i < totalSeatOccupation.length; i++) {
+            seatOccupation[i/20] += totalSeatOccupation[i];
+        }
+
+        for (int i = 0; i < seatOccupation.length; i++) {
+            seatOccupation[i] = seatOccupation[i] / 20;
+        }
+
+        return seatOccupation;
+    }
+
     public Course.Activity[] getActivities() {
         return mCourses;
     }

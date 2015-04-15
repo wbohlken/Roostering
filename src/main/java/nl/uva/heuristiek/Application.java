@@ -54,11 +54,19 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
             }
             System.out.printf("Loops: %d, Smallest penalty: %d\n ", loops++, mSmallestPenalty);
         }
-        System.out.printf("Penalty: %d", bestSchedule.getPenalty() + "\n");
+        System.out.printf("Penalty: %d \n", bestSchedule.getPenalty());
 
         int[] occupation = bestSchedule.getRoomOccupation();
+        int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
+
+        System.out.println("Room occupations");
         for (int i = 0; i < occupation.length; i++) {
             System.out.println(i + ": " + occupation[i] + " %");
+        }
+
+        System.out.println("Average seat occupation per room");
+        for (int i = 0; i < averageSeatOccupation.length; i++) {
+            System.out.println(i + ": " + averageSeatOccupation[i] + " %");
         }
 
         for (Course.Activity activity : bestSchedule.getPenaltyActivities()) {
