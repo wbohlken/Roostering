@@ -169,7 +169,7 @@ public class Course {
             for (int i = 0; i < mWorkGroupCount; i++) {
                 for (int j = 0; j < mStudentGroups.size(); j++) {
                     if (!mGroupActivities.containsKey(j))
-                        mGroupActivities.put(j, new HashSet<>());
+                        mGroupActivities.put(j, new HashSet<Activity>());
                     Activity activity = new Activity(TYPE_ACTIVITY_WORKGROUP, mStudentGroups.get(j), activityId);
                     mGroupActivities.get(j).add(activity);
                     allActivities.add(activity);
@@ -179,7 +179,7 @@ public class Course {
             for (int i = 0; i < mPracticumCount; i++) {
                 for (int j = 0; j < mStudentGroups.size(); j++) {
                     if (!mGroupActivities.containsKey(j))
-                        mGroupActivities.put(j, new HashSet<>());
+                        mGroupActivities.put(j, new HashSet<Activity>());
                     Activity activity = new Activity(TYPE_ACTIVITY_PRACTICAL, mStudentGroups.get(j), activityId);
                     mGroupActivities.get(j).add(activity);
                     allActivities.add(activity);

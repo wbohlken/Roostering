@@ -26,7 +26,12 @@ public class Schedule {
         for (Course course : courses) {
             mActivities.addAll(course.getActivities());
         }
-        Collections.sort(mActivities, (o1, o2) -> Integer.compare(o1.getStudents().size(), o2.getStudents().size()));
+        Collections.sort(mActivities, new Comparator<Course.Activity>() {
+            @Override
+            public int compare(Course.Activity o1, Course.Activity o2) {
+                return Integer.compare(o1.getStudents().size(), o2.getStudents().size());
+            }
+        });
         mSchedule = new Course.Activity[Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT];
     }
 
