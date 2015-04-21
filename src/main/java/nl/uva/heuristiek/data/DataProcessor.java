@@ -9,10 +9,7 @@ import nl.uva.heuristiek.model.Student;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by remco on 08/04/15.
@@ -20,13 +17,13 @@ import java.util.Set;
 public class DataProcessor {
 
     private static Map<String, Course> mCourseMap;
-    private static Set<Student> mStudents;
+    private static ArrayList<Student> mStudents;
 
     @NotNull
     public static Schedule process(File input, File vakken) {
         try {
             mCourseMap = new HashMap<>();
-            mStudents = new HashSet<>();
+            mStudents = new ArrayList<>(660);
 
             CSVReader reader = new CSVReader(new FileReader(vakken));
             String[] nextLine;
@@ -52,13 +49,5 @@ public class DataProcessor {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public static Map<String, Course> getCourseMap() {
-        return mCourseMap;
-    }
-
-    public static Set<Student> getStudents() {
-        return mStudents;
     }
 }

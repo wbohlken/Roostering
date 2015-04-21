@@ -11,15 +11,16 @@ import java.util.*;
 public class Schedule {
     private ScheduleStateListener mListener;
     private Course.Activity[] mSchedule;
-    private Set<Student> mStudents;
+    private ArrayList<Student> mStudents;
     private Collection<Course> mCourses;
     private LinkedList<Course.Activity> mActivities;
     private int mPenalty;
+    private Integer[] mTimeslots;
     private Set<Course.Activity> mPenaltyActivities = new HashSet<Course.Activity>();
 
     int mActivitiesPlanned = 0;
 
-    public Schedule(Collection<Course> courses, Set<Student> students) {
+    public Schedule(Collection<Course> courses, ArrayList<Student> students) {
         mCourses = courses;
         mStudents = students;
         mActivities = new LinkedList<>();
@@ -33,20 +34,24 @@ public class Schedule {
             }
         });
         mSchedule = new Course.Activity[Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT];
+        mTimeslots = new Integer[20];
+        for (int i = 0; i < mTimeslots.length; i++) {
+            mTimeslots[i] = i;
+        }
+        shuffleArray(mTimeslots);
     }
 
     public void setListener(ScheduleStateListener listener) {
         mListener = listener;
     }
 
+    public Integer[] getTimeslots() {
+        return mTimeslots;
+    }
+
     public void planCourses() {
-        int[] timeSlots = new int[20];
-        for (int i = 0; i < timeSlots.length; i++) {
-            timeSlots[i] = i;
-        }
-        shuffleArray(timeSlots);
         for (Course.Activity activity : mActivities) {
-            planActivity(activity, timeSlots);
+            planActivity(activity);
             mListener.onStateChanged(mSchedule);
         }
         for (Course course : mCourses) {
@@ -63,7 +68,7 @@ public class Schedule {
 
     }
 
-    static void shuffleArray(int[] ar)
+    static void shuffleArray(Integer[] ar)
     {
         SecureRandom rnd = new SecureRandom();
         for (int i = ar.length - 1; i > 0; i--)
@@ -87,10 +92,10 @@ public class Schedule {
 
     }
 
-    private void planActivity(Course.Activity activity, int[] randomTimeslots) {
+    private void planActivity(Course.Activity activity) {
         int room = bestFitRoom(activity.getStudents().size()), timeslotIndex = 0;
         float treshhold = 1;
-        while (checkContraints(activity, room, randomTimeslots[timeslotIndex]) < treshhold) {
+        while (checkContraints(activity, room, mTimeslots[timeslotIndex]) < treshhold) {
             if (++timeslotIndex == Constants.TIMESLOT_COUNT) {
                 if (room + 1 == Constants.ROOM_COUNT) {
                     treshhold -= 0.1f;
@@ -105,8 +110,8 @@ public class Schedule {
                 timeslotIndex = 0;
             }
         }
-        mSchedule[room*20+randomTimeslots[timeslotIndex]] = activity;
-        activity.plan(randomTimeslots[timeslotIndex]);
+        mSchedule[room*20+mTimeslots[timeslotIndex]] = activity;
+        activity.plan(mTimeslots[timeslotIndex]);
         mActivitiesPlanned++;
     }
 

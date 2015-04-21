@@ -8,15 +8,16 @@ import nl.uva.heuristiek.view.SchedulePanel;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.HashSet;
 
 import org.jfugue.player.Player;
 
 public class Application extends JFrame implements Schedule.ScheduleStateListener {
-    Course.Activity[] mScheduleState;
     Player mPlayer;
 
     String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
 
+    HashSet<Integer[]> randomStates = new HashSet<>();
     private int mSmallestPenalty = 2000;
     private final SchedulePanel mSchedulePanel;
 
@@ -34,20 +35,26 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         add(mSchedulePanel);
 
         new Thread(new Runnable() {
-            @Override
             public void run() {
                 Schedule bestSchedule;
                 long loops = 0;
+                int dupilcates = 0;
                 while (true) {
                     Schedule schedule = DataProcessor.process(students, courses);
                     schedule.setListener(Application.this);
+                    if (randomStates.contains(schedule.getTimeslots())) {
+                        log("Already seen");
+                        dupilcates++;
+                        continue;
+                    }
+                    randomStates.add(schedule.getTimeslots());
                     schedule.planCourses();
                     if (schedule.getPenalty() < mSmallestPenalty) {
                         mSmallestPenalty = schedule.getPenalty();
                         bestSchedule = schedule;
                         if (mSmallestPenalty <= 40) break;
                     }
-                    log(String.format("Loops: %d, Smallest penalty: %d", loops++, mSmallestPenalty));
+                    log(String.format("Loops: %d, Smallest penalty: %d, Duplicates: %d", loops++, mSmallestPenalty, dupilcates));
                 }
 
                 log(String.format("Penalty: %d", bestSchedule.getPenalty()));
@@ -74,7 +81,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
-            @Override
             public void run() {
                 Application application = new Application();
                 application.setVisible(true);
@@ -83,9 +89,9 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     }
 
     public void onStateChanged(Course.Activity[] schedule) {
-        mSchedulePanel.setActivities(schedule);
-        revalidate();
-        repaint();
+//        mSchedulePanel.setActivities(schedule);
+//        revalidate();
+//        repaint();
     }
 
     public void onScheduleComplete(Course.Activity[] activities, int penalty, int totalActivities, int plannedActivities) {
