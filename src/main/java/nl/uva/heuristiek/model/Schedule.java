@@ -9,40 +9,52 @@ import java.util.*;
  * Created by remco on 08/04/15.
  */
 public class Schedule {
-    private final ScheduleStateListener mListener;
-    private Course.Activity[] mCourses;
+    private ScheduleStateListener mListener;
+    private Course.Activity[] mSchedule;
+    private Set<Student> mStudents;
+    private Collection<Course> mCourses;
+    private LinkedList<Course.Activity> mActivities;
     private int mPenalty;
     private Set<Course.Activity> mPenaltyActivities = new HashSet<Course.Activity>();
 
     int mActivitiesPlanned = 0;
 
-    public Schedule(ScheduleStateListener listener) {
-        mCourses = new Course.Activity[Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT];
-        mListener = listener;
-        listener.onStateCreated(mCourses);
+    public Schedule(Collection<Course> courses, Set<Student> students) {
+        mCourses = courses;
+        mStudents = students;
+        mActivities = new LinkedList<>();
+        for (Course course : courses) {
+            mActivities.addAll(course.getActivities());
+        }
+        Collections.sort(mActivities, (o1, o2) -> Integer.compare(o1.getStudents().size(), o2.getStudents().size()));
+        mSchedule = new Course.Activity[Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT];
     }
 
-    public void planCourses(final Collection<Course> courses, final LinkedList<Course.Activity> activities, Set<Student> students) {
+    public void setListener(ScheduleStateListener listener) {
+        mListener = listener;
+    }
+
+    public void planCourses() {
         int[] timeSlots = new int[20];
         for (int i = 0; i < timeSlots.length; i++) {
             timeSlots[i] = i;
         }
         shuffleArray(timeSlots);
-        for (Course.Activity activity : activities) {
+        for (Course.Activity activity : mActivities) {
             planActivity(activity, timeSlots);
-            mListener.onStateChanged();
+            mListener.onStateChanged(mSchedule);
         }
-        for (Course course : courses) {
+        for (Course course : mCourses) {
             mPenalty += course.getPenalty();
         }
-        for (Student student : students) {
+        for (Student student : mStudents) {
             mPenalty += student.getPenalty();
         }
 //                System.out.println(String.format("Total activities to plan: %d", activities.size()));
 //
 //                System.out.println(String.format("Activities planned: %d", mActivitiesPlanned));
 //                System.out.println(String.format("Total penalty: %d", mPenalty));
-        mListener.onScheduleComplete(mCourses, mPenalty, activities.size(), mActivitiesPlanned);
+        mListener.onScheduleComplete(mSchedule, mPenalty, mActivities.size(), mActivitiesPlanned);
 
     }
 
@@ -88,7 +100,7 @@ public class Schedule {
                 timeslotIndex = 0;
             }
         }
-        mCourses[room*20+randomTimeslots[timeslotIndex]] = activity;
+        mSchedule[room*20+randomTimeslots[timeslotIndex]] = activity;
         activity.plan(randomTimeslots[timeslotIndex]);
         mActivitiesPlanned++;
     }
@@ -99,7 +111,7 @@ public class Schedule {
 
     private double checkContraints(Course.Activity activity, int room, int timeslot) {
         double value = 1;
-        if (mCourses[room*20+timeslot] == null) {
+        if (mSchedule[room*20+timeslot] == null) {
             if (activity.isDayUsed(timeslot / 4)) value -= 0.5;
             final double studentNegativeValue = value / (double)activity.getStudents().size();
             for (Student student : activity.getStudents()) {
@@ -120,7 +132,7 @@ public class Schedule {
         int[] roomOccupation = new int[Constants.ROOM_COUNT];
 
         for (int i = 0; i < (Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT); i++) {
-            if (mCourses[i] != null) {
+            if (mSchedule[i] != null) {
                 roomOccupation[i / 20]++;
             }
         }
@@ -141,8 +153,8 @@ public class Schedule {
         for (int i = 0; i < (Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT); i++) {
             totalSeatOccupation[i] = 0;
             int roomCapacity = Constants.ROOM_CAPACATIES[i/20];
-            if (mCourses[i] != null) {
-                totalSeatOccupation[i] = 100 * mCourses[i].getStudents().size() / roomCapacity;
+            if (mSchedule[i] != null) {
+                totalSeatOccupation[i] = 100 * mSchedule[i].getStudents().size() / roomCapacity;
             }
         }
 
@@ -157,13 +169,12 @@ public class Schedule {
         return seatOccupation;
     }
 
-    public Course.Activity[] getActivities() {
-        return mCourses;
+    public Course.Activity[] getSchedule() {
+        return mSchedule;
     }
 
     public interface ScheduleStateListener {
-        void onStateCreated(Course.Activity[] state);
-        void onStateChanged();
+        void onStateChanged(Course.Activity[] schedule);
         void onScheduleComplete(Course.Activity[] activities, int penalty, int totalActivities, int plannedActivities);
     }
 

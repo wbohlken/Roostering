@@ -1,7 +1,9 @@
 package nl.uva.heuristiek.data;
 
 import com.opencsv.CSVReader;
+import com.sun.istack.internal.NotNull;
 import nl.uva.heuristiek.model.Course;
+import nl.uva.heuristiek.model.Schedule;
 import nl.uva.heuristiek.model.Student;
 
 import java.io.File;
@@ -20,7 +22,8 @@ public class DataProcessor {
     private static Map<String, Course> mCourseMap;
     private static Set<Student> mStudents;
 
-    public static Map<String, Course> process(File input, File vakken) {
+    @NotNull
+    public static Schedule process(File input, File vakken) {
         try {
             mCourseMap = new HashMap<>();
             mStudents = new HashSet<>();
@@ -45,10 +48,9 @@ public class DataProcessor {
                 }
             }
             reader.close();
-
-            return mCourseMap;
+            return new Schedule(mCourseMap.values(), mStudents);
         } catch (IOException e) {
-            return null;
+            throw new RuntimeException(e);
         }
     }
 
