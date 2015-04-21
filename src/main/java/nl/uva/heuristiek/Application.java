@@ -27,52 +27,58 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
         mPlayer = new Player();
-        File courses = new File("vakken.csv");
-        File students = new File("studenten_roostering.csv");
+        final File courses = new File("vakken.csv");
+        final File students = new File("studenten_roostering.csv");
 
         mSchedulePanel = new SchedulePanel(null);
         add(mSchedulePanel);
 
-        new Thread(() -> {
-            Schedule bestSchedule;
-            long loops = 0;
-            while (true) {
-                Schedule schedule = DataProcessor.process(students, courses);
-                schedule.setListener(this);
-                schedule.planCourses();
-                if (schedule.getPenalty() < mSmallestPenalty) {
-                    mSmallestPenalty = schedule.getPenalty();
-                    bestSchedule = schedule;
-                    if (mSmallestPenalty <= 40) break;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Schedule bestSchedule;
+                long loops = 0;
+                while (true) {
+                    Schedule schedule = DataProcessor.process(students, courses);
+                    schedule.setListener(Application.this);
+                    schedule.planCourses();
+                    if (schedule.getPenalty() < mSmallestPenalty) {
+                        mSmallestPenalty = schedule.getPenalty();
+                        bestSchedule = schedule;
+                        if (mSmallestPenalty <= 40) break;
+                    }
+                    log(String.format("Loops: %d, Smallest penalty: %d", loops++, mSmallestPenalty));
                 }
-                log(String.format("Loops: %d, Smallest penalty: %d", loops++, mSmallestPenalty));
-            }
 
-            log(String.format("Penalty: %d", bestSchedule.getPenalty()));
+                log(String.format("Penalty: %d", bestSchedule.getPenalty()));
 
-            int[] occupation = bestSchedule.getRoomOccupation();
-            int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
+                int[] occupation = bestSchedule.getRoomOccupation();
+                int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
 
-            log(String.format("Room occupations"));
-            for (int i = 0; i < occupation.length; i++) {
-                System.out.println(i + ": " + occupation[i] + " %");
-            }
+                log("Room occupations");
+                for (int i = 0; i < occupation.length; i++) {
+                    System.out.println(i + ": " + occupation[i] + " %");
+                }
 
-            log(String.format("Average seat occupation per room"));
-            for (int i = 0; i < averageSeatOccupation.length; i++) {
-                log(String.format(i + ": " + averageSeatOccupation[i] + " %"));
-            }
+                log("Average seat occupation per room");
+                for (int i = 0; i < averageSeatOccupation.length; i++) {
+                    log(i + ": " + averageSeatOccupation[i] + " %");
+                }
 
-            for (Course.Activity activity : bestSchedule.getPenaltyActivities()) {
-                log(String.format("Penalty for Activity in course %s", activity.getCourse().getCourseId()));
+                for (Course.Activity activity : bestSchedule.getPenaltyActivities()) {
+                    log(String.format("Penalty for Activity in course %s", activity.getCourse().getCourseId()));
+                }
             }
         }).start();
     }
 
     public static void main(String[] args) {
-        EventQueue.invokeLater(() -> {
-            Application application = new Application();
-            application.setVisible(true);
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                Application application = new Application();
+                application.setVisible(true);
+            }
         });
     }
 
