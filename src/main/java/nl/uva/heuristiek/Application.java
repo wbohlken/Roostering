@@ -20,6 +20,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
 
     private int mSmallestPenalty = 2000;
+    private final SchedulePanel mSchedulePanel;
 
     public Application() {
         setTitle("Simple example");
@@ -30,54 +31,61 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         mPlayer = new Player();
         File courses = new File("vakken.csv");
         File students = new File("studenten_roostering.csv");
-        Schedule bestSchedule;
-        long loops = 0;
-        while (true) {
-            DataProcessor.process(students, courses);
-            Map<String, Course> courseMap = DataProcessor.getCourseMap();
-            Collection<Course> courseCollection = courseMap.values();
-            Set<Student> studentSet = DataProcessor.getStudents();
-            Schedule schedule = new Schedule(this);
-            LinkedList<Course.Activity> activities = new LinkedList<Course.Activity>();
-            for (Course course : courseCollection) {
-                activities.addAll(course.getActivities());
-            }
-            Collections.sort(activities, new Comparator<Course.Activity>() {
-                public int compare(Course.Activity o1, Course.Activity o2) {
-                    return Integer.compare(o1.getStudents().size(), o2.getStudents().size());
+
+        mSchedulePanel = new SchedulePanel(null);
+        add(mSchedulePanel);
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Schedule bestSchedule;
+                long loops = 0;
+                while (true) {
+                    DataProcessor.process(students, courses);
+                    Map<String, Course> courseMap = DataProcessor.getCourseMap();
+                    Collection<Course> courseCollection = courseMap.values();
+                    Set<Student> studentSet = DataProcessor.getStudents();
+                    Schedule schedule = new Schedule(Application.this);
+                    LinkedList<Course.Activity> activities = new LinkedList<Course.Activity>();
+                    for (Course course : courseCollection) {
+                        activities.addAll(course.getActivities());
+                    }
+                    Collections.sort(activities, new Comparator<Course.Activity>() {
+                        public int compare(Course.Activity o1, Course.Activity o2) {
+                            return Integer.compare(o1.getStudents().size(), o2.getStudents().size());
+                        }
+                    });
+
+                    schedule.planCourses(courseCollection, activities, DataProcessor.getStudents());
+                    if (schedule.getPenalty() < mSmallestPenalty) {
+                        mSmallestPenalty = schedule.getPenalty();
+                        bestSchedule = schedule;
+                        if (mSmallestPenalty <= 40) break;
+                    }
+                    System.out.printf("Loops: %d, Smallest penalty: %d\n ", loops++, mSmallestPenalty);
                 }
-            });
 
-            schedule.planCourses(courseCollection, activities, DataProcessor.getStudents());
-            if (schedule.getPenalty() < mSmallestPenalty) {
-                mSmallestPenalty = schedule.getPenalty();
-                bestSchedule = schedule;
-                if (mSmallestPenalty <= 60) break;
+                System.out.printf("Penalty: %d \n", bestSchedule.getPenalty());
+
+                int[] occupation = bestSchedule.getRoomOccupation();
+                int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
+
+                System.out.println("Room occupations");
+                for (int i = 0; i < occupation.length; i++) {
+                    System.out.println(i + ": " + occupation[i] + " %");
+                }
+
+                System.out.println("Average seat occupation per room");
+                for (int i = 0; i < averageSeatOccupation.length; i++) {
+                    System.out.println(i + ": " + averageSeatOccupation[i] + " %");
+                }
+
+                for (Course.Activity activity : bestSchedule.getPenaltyActivities()) {
+                    System.out.printf("Penalty for Activity in course %s", activity.getCourse().getCourseId());
+                }
             }
-            System.out.printf("Loops: %d, Smallest penalty: %d\n ", loops++, mSmallestPenalty);
-        }
-        System.out.printf("Penalty: %d \n", bestSchedule.getPenalty());
+        }).start();
 
-        int[] occupation = bestSchedule.getRoomOccupation();
-        int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
-
-        System.out.println("Room occupations");
-        for (int i = 0; i < occupation.length; i++) {
-            System.out.println(i + ": " + occupation[i] + " %");
-        }
-
-        System.out.println("Average seat occupation per room");
-        for (int i = 0; i < averageSeatOccupation.length; i++) {
-            System.out.println(i + ": " + averageSeatOccupation[i] + " %");
-        }
-
-        for (Course.Activity activity : bestSchedule.getPenaltyActivities()) {
-            System.out.printf("Penalty for Activity in course %s", activity.getCourse().getCourseId());
-        }
-        for (int room = 0; room < Constants.ROOM_COUNT; room++) {
-            SchedulePanel schedulePanel = new SchedulePanel(bestSchedule);
-            add(schedulePanel);
-        }
 
 
     }
@@ -92,7 +100,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     }
 
     public void onStateCreated(Course.Activity[] state) {
-        mScheduleState = state;
         onStateChanged();
     }
 
@@ -101,7 +108,10 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         repaint();
     }
 
-    public void onScheduleComplete(int penalty, int totalActivities, int plannedActivities) {
+    public void onScheduleComplete(Course.Activity[] activities, int penalty, int totalActivities, int plannedActivities) {
+//        mSchedulePanel.setActivities(activities);
+//        revalidate();
+//        repaint();
 //        if (penalty < mSmallestPenalty)
 //            mSmallestPenalty = penalty;
 //        System.out.printf("Smallest penalty: %d, Total Activities: %d, Activities planned: %d\n", penalty, totalActivities, plannedActivities);

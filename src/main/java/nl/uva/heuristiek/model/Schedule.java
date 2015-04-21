@@ -42,7 +42,7 @@ public class Schedule {
 //
 //                System.out.println(String.format("Activities planned: %d", mActivitiesPlanned));
 //                System.out.println(String.format("Total penalty: %d", mPenalty));
-        mListener.onScheduleComplete(mPenalty, activities.size(), mActivitiesPlanned);
+        mListener.onScheduleComplete(mCourses, mPenalty, activities.size(), mActivitiesPlanned);
 
     }
 
@@ -81,7 +81,9 @@ public class Schedule {
                         return;
                     room = bestFitRoom(activity.getStudents().size());
                 } else {
+//                    shuffleArray(randomTimeslots);
                     room++;
+
                 }
                 timeslotIndex = 0;
             }
@@ -162,7 +164,7 @@ public class Schedule {
     public interface ScheduleStateListener {
         void onStateCreated(Course.Activity[] state);
         void onStateChanged();
-        void onScheduleComplete(int penalty, int totalActivities, int plannedActivities);
+        void onScheduleComplete(Course.Activity[] activities, int penalty, int totalActivities, int plannedActivities);
     }
 
 }

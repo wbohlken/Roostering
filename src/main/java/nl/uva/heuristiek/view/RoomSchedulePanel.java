@@ -11,14 +11,20 @@ import java.awt.*;
  */
 public class RoomSchedulePanel extends JPanel {
 
-    private final Course.Activity[] mActivities;
+    RoomDaySchedulePanel[] mPanels = new RoomDaySchedulePanel[Constants.DAY_COUNT];
 
     public RoomSchedulePanel(Course.Activity[] activities, int room) {
-        mActivities = activities;
         setLayout(new GridLayout(0, 5));
         for (int day = 0; day < Constants.DAY_COUNT; day++) {
-            add(new RoomDaySchedulePanel(mActivities, room, day));
+            mPanels[day] = new RoomDaySchedulePanel(activities, room, day);
+            add(mPanels[day]);
         }
         setSize(400, 300);
     }
+
+    public void setActivities(Course.Activity[] activities) {
+        for (RoomDaySchedulePanel panel : mPanels)
+            panel.setActivities(activities);
+    }
+
 }
