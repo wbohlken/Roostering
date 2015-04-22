@@ -1,5 +1,7 @@
 package nl.uva.heuristiek.model;
 
+import com.sun.istack.internal.NotNull;
+import com.sun.istack.internal.Nullable;
 import nl.uva.heuristiek.Constants;
 
 import java.security.SecureRandom;
@@ -13,32 +15,41 @@ public class Schedule {
     private Course.Activity[] mSchedule;
     private ArrayList<Student> mStudents;
     private Collection<Course> mCourses;
-    private LinkedList<Course.Activity> mActivities;
-    private int mPenalty;
+    private ArrayList<Course.Activity> mActivities;
+    private int mPenalty = -1;
     private Integer[] mTimeslots;
     private Set<Course.Activity> mPenaltyActivities = new HashSet<Course.Activity>();
 
     int mActivitiesPlanned = 0;
 
     public Schedule(Collection<Course> courses, ArrayList<Student> students) {
+        this(courses, students, null);
+    }
+
+    public Schedule(@NotNull Collection<Course> courses, @NotNull ArrayList<Student> students, @Nullable Integer[] timeslots) {
         mCourses = courses;
         mStudents = students;
-        mActivities = new LinkedList<>();
+        mActivities = new ArrayList<>();
         for (Course course : courses) {
             mActivities.addAll(course.getActivities());
         }
+        final Random random = new Random();
         Collections.sort(mActivities, new Comparator<Course.Activity>() {
             @Override
             public int compare(Course.Activity o1, Course.Activity o2) {
-                return Integer.compare(o1.getStudents().size(), o2.getStudents().size());
+                return random.nextInt(2) - 1;
             }
         });
         mSchedule = new Course.Activity[Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT];
-        mTimeslots = new Integer[20];
-        for (int i = 0; i < mTimeslots.length; i++) {
-            mTimeslots[i] = i;
-        }
-        shuffleArray(mTimeslots);
+        if (timeslots == null) {
+            mTimeslots = new Integer[20];
+            for (int i = 0; i < mTimeslots.length; i++) {
+                mTimeslots[i] = i;
+            }
+            shuffleArray(mTimeslots);
+        } else
+            mTimeslots = timeslots;
+
     }
 
     public void setListener(ScheduleStateListener listener) {
@@ -50,21 +61,16 @@ public class Schedule {
     }
 
     public void planCourses() {
-        for (Course.Activity activity : mActivities) {
-            planActivity(activity);
+        final int count = mActivities.size();
+        for (int i = 0; i < count; i++) {
+            planActivity(mActivities.get(i), i);
             mListener.onStateChanged(mSchedule);
-        }
-        for (Course course : mCourses) {
-            mPenalty += course.getPenalty();
-        }
-        for (Student student : mStudents) {
-            mPenalty += student.getPenalty();
         }
 //                System.out.println(String.format("Total activities to plan: %d", activities.size()));
 //
 //                System.out.println(String.format("Activities planned: %d", mActivitiesPlanned));
 //                System.out.println(String.format("Total penalty: %d", mPenalty));
-        mListener.onScheduleComplete(mSchedule, mPenalty, mActivities.size(), mActivitiesPlanned);
+        mListener.onScheduleComplete(mSchedule, 0, mActivities.size(), mActivitiesPlanned);
 
     }
 
@@ -92,7 +98,7 @@ public class Schedule {
 
     }
 
-    private void planActivity(Course.Activity activity) {
+    private void planActivity(Course.Activity activity, int activityIndex) {
         int room = bestFitRoom(activity.getStudents().size()), timeslotIndex = 0;
         float treshhold = 1;
         while (checkContraints(activity, room, mTimeslots[timeslotIndex]) < treshhold) {
@@ -135,6 +141,15 @@ public class Schedule {
     }
 
     public int getPenalty() {
+        if (mPenalty == -1) {
+            mPenalty = 0;
+            for (Course course : mCourses) {
+                mPenalty += course.getPenalty();
+            }
+            for (Student student : mStudents) {
+                mPenalty += student.getPenalty();
+            }
+        }
         return mPenalty;
     }
 
