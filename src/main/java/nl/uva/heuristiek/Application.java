@@ -1,5 +1,7 @@
 package nl.uva.heuristiek;
 
+import com.google.gson.*;
+import com.opencsv.CSVWriter;
 import nl.uva.heuristiek.data.DataProcessor;
 import nl.uva.heuristiek.model.Course;
 import nl.uva.heuristiek.model.Schedule;
@@ -8,7 +10,13 @@ import nl.uva.heuristiek.view.SchedulePanel;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.PriorityQueue;
 
 import org.jfugue.player.Player;
 
@@ -20,6 +28,8 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     HashSet<Integer[]> randomStates = new HashSet<>();
     private int mSmallestPenalty = 2000;
     private final SchedulePanel mSchedulePanel;
+    FileWriter mLogWriter;
+    CSVWriter mResultsLogWriter;
 
     public Application() {
         setTitle("Simple example");
@@ -31,32 +41,54 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         final File courses = new File("vakken.csv");
         final File students = new File("studenten_roostering.csv");
 
+        File file = new File("highscores.json");
+        File csvResults = new File("results.csv");
+
+        try {
+            if (file.exists()) file.delete();
+            file.createNewFile();
+                mLogWriter = new FileWriter(file);
+            if (csvResults.exists()) csvResults.delete();
+            csvResults.createNewFile();
+            mResultsLogWriter = new CSVWriter(new FileWriter(csvResults));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         mSchedulePanel = new SchedulePanel(null);
         add(mSchedulePanel);
 
+        final Gson gson = new GsonBuilder().setPrettyPrinting().create();
         new Thread(new Runnable() {
             public void run() {
-                Schedule bestSchedule;
+                Schedule bestSchedule = null;
+                JsonArray goodSchedules = new JsonArray();
                 long loops = 0;
                 int dupilcates = 0;
                 while (true) {
-                    Schedule schedule = DataProcessor.process(students, courses);
-                    schedule.setListener(Application.this);
-                    if (randomStates.contains(schedule.getTimeslots())) {
-                        log("Already seen");
-                        dupilcates++;
-                        continue;
+                    Schedule schedule = planScheduleConstructive(students, courses);
+                    mResultsLogWriter.writeNext(new String[]{String.valueOf(schedule.getPenalty())});
+                    if (schedule.getPenalty() < 40) {
+                        JsonObject scheduleJson = new JsonObject();
+                        scheduleJson.add("state", gson.toJsonTree(schedule.getTimeslots()));
+                        scheduleJson.addProperty("penalty", schedule.getPenalty());
+                        goodSchedules.add(scheduleJson);
                     }
-                    randomStates.add(schedule.getTimeslots());
-                    schedule.planCourses();
                     if (schedule.getPenalty() < mSmallestPenalty) {
                         mSmallestPenalty = schedule.getPenalty();
                         bestSchedule = schedule;
-                        if (mSmallestPenalty <= 40) break;
                     }
+                    if (mSmallestPenalty <= 20 && loops > 1000) break;
                     log(String.format("Loops: %d, Smallest penalty: %d, Duplicates: %d", loops++, mSmallestPenalty, dupilcates));
                 }
+                try {
+                    mLogWriter.write(gson.toJson(goodSchedules));
+                    mLogWriter.close();
 
+                    mResultsLogWriter.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 log(String.format("Penalty: %d", bestSchedule.getPenalty()));
 
                 int[] occupation = bestSchedule.getRoomOccupation();
@@ -79,11 +111,19 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         }).start();
     }
 
+    private Schedule planScheduleConstructive(File students, File courses) {
+        Schedule schedule = DataProcessor.process(students, courses);
+        schedule.setListener(Application.this);
+        randomStates.add(schedule.getTimeslots());
+        schedule.planCourses();
+        return schedule;
+    }
+
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 Application application = new Application();
-                application.setVisible(true);
+//                application.setVisible(true);
             }
         });
     }
