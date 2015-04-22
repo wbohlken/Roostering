@@ -11,7 +11,6 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.HashSet;
 
 import org.jfugue.player.Player;
 
@@ -20,7 +19,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 
     String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
 
-    HashSet<Integer[]> randomStates = new HashSet<>();
     private int mSmallestPenalty = 2000;
     private final SchedulePanel mSchedulePanel;
     FileWriter mLogWriter;
@@ -61,8 +59,10 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 long loops = 0;
                 int dupilcates = 0;
                 while (true) {
-//                    Schedule schedule = planScheduleConstructive(students, courses);
-                    Schedule schedule = planRandom(students, courses);
+                    Schedule schedule = DataProcessor.process(students, courses, Schedule.FLAG_PLAN_METHOD_RANDOM);
+                    schedule.setListener(Application.this);
+                    schedule.plan();
+//                    Schedule schedule = planRandom(students, courses);
                     try {
                         mResultsLogWriter.write(schedule.getPenalty()+"\n");
                     } catch (IOException e) {
@@ -105,21 +105,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 }
             }
         }).start();
-    }
-
-    private Schedule planScheduleConstructive(File students, File courses) {
-        Schedule schedule = DataProcessor.process(students, courses);
-        schedule.setListener(Application.this);
-        randomStates.add(schedule.getTimeslots());
-        schedule.planCourses();
-        return schedule;
-    }
-
-    private Schedule planRandom(File students, File courses) {
-        Schedule schedule = DataProcessor.process(students, courses);
-        schedule.setListener(this);
-        schedule.planRandom();
-        return schedule;
     }
 
     public static void main(String[] args) {

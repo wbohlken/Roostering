@@ -20,7 +20,7 @@ public class DataProcessor {
     private static ArrayList<Student> mStudents;
 
     @NotNull
-    public static Schedule process(File input, File vakken) {
+    public static Schedule process(File input, File vakken, int flags) {
         try {
             mCourseMap = new HashMap<>();
             mStudents = new ArrayList<>(660);
@@ -45,7 +45,7 @@ public class DataProcessor {
                 }
             }
             reader.close();
-            return new Schedule(mCourseMap.values(), mStudents);
+            return new Schedule(mCourseMap.values(), mStudents, flags);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

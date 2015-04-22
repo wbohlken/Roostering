@@ -11,6 +11,18 @@ import java.util.*;
  * Created by remco on 08/04/15.
  */
 public class Schedule {
+
+    public static final int FLAG_ACTIVITY_SORT_STUDENTS_DESC = 0x0;
+    public static final int FLAG_ACTIVITY_SORT_STUDENTS_ASC = 0x1;
+    public static final int FLAG_ACTIVITY_SORT_RANDOM = 0x2;
+
+    public static final int FLAG_PLAN_METHOD_CONSTRUCTIVE = 0x0;
+    public static final int FLAG_PLAN_METHOD_RANDOM = 0x1 << 2;
+
+    private static final int MASK_ACTIVITY_SORT = 0x3;
+    private static final int MASK_PLAN_METHOD = 0x1 << 2;
+    private final int mFlags;
+
     private ScheduleStateListener mListener;
     private Course.Activity[] mSchedule;
     private ArrayList<Student> mStudents;
@@ -22,24 +34,19 @@ public class Schedule {
 
     int mActivitiesPlanned = 0;
 
-    public Schedule(Collection<Course> courses, ArrayList<Student> students) {
-        this(courses, students, null);
+    public Schedule(Collection<Course> courses, ArrayList<Student> students, int flags) {
+        this(courses, students, flags, null);
     }
 
-    public Schedule(@NotNull Collection<Course> courses, @NotNull ArrayList<Student> students, @Nullable Integer[] timeslots) {
+    public Schedule(@NotNull Collection<Course> courses, @NotNull ArrayList<Student> students, int flags, @Nullable Integer[] timeslots) {
         mCourses = courses;
         mStudents = students;
+        mFlags = flags;
         mActivities = new ArrayList<>();
         for (Course course : courses) {
             mActivities.addAll(course.getActivities());
         }
-        final Random random = new Random();
-        Collections.sort(mActivities, new Comparator<Course.Activity>() {
-            @Override
-            public int compare(Course.Activity o1, Course.Activity o2) {
-                return random.nextInt(2) - 1;
-            }
-        });
+        Collections.sort(mActivities, getActivityComparator(flags & MASK_ACTIVITY_SORT));
         mSchedule = new Course.Activity[Constants.ROOM_COUNT*Constants.TIMESLOT_COUNT];
         if (timeslots == null) {
             mTimeslots = new Integer[20];
@@ -52,6 +59,35 @@ public class Schedule {
 
     }
 
+    private Comparator<Course.Activity> getActivityComparator(int activitySortFlag) {
+
+        switch (activitySortFlag) {
+            case FLAG_ACTIVITY_SORT_RANDOM:
+                final Random random = new Random();
+                return new Comparator<Course.Activity>() {
+                    @Override
+                    public int compare(Course.Activity o1, Course.Activity o2) {
+                        return random.nextInt(2) - 1;
+                    }
+                };
+            case FLAG_ACTIVITY_SORT_STUDENTS_ASC:
+                return new Comparator<Course.Activity>() {
+                    @Override
+                    public int compare(Course.Activity o1, Course.Activity o2) {
+                        return Integer.compare(o1.getStudents().size(), o2.getStudents().size());
+                    }
+                };
+            default:
+                return new Comparator<Course.Activity>() {
+                    @Override
+                    public int compare(Course.Activity o1, Course.Activity o2) {
+                        return Integer.compare(o2.getStudents().size(), o1.getStudents().size());
+                    }
+                };
+        }
+
+    }
+
     public void setListener(ScheduleStateListener listener) {
         mListener = listener;
     }
@@ -60,7 +96,7 @@ public class Schedule {
         return mTimeslots;
     }
 
-    public void planCourses() {
+    private void planCourses() {
         final int count = mActivities.size();
         for (int i = 0; i < count; i++) {
             planActivity(mActivities.get(i), i);
@@ -74,7 +110,18 @@ public class Schedule {
 
     }
 
-    public void planRandom() {
+    public void plan() {
+        switch (mFlags & MASK_PLAN_METHOD) {
+            case FLAG_PLAN_METHOD_RANDOM:
+                planRandom();
+                break;
+            default:
+                planCourses();
+
+        }
+    }
+
+    private void planRandom() {
         SecureRandom random = new SecureRandom();
         for (Course.Activity activity : mActivities) {
             int i = random.nextInt(mSchedule.length);
