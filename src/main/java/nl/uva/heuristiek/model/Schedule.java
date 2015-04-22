@@ -70,8 +70,19 @@ public class Schedule {
 //
 //                System.out.println(String.format("Activities planned: %d", mActivitiesPlanned));
 //                System.out.println(String.format("Total penalty: %d", mPenalty));
-        mListener.onScheduleComplete(mSchedule, 0, mActivities.size(), mActivitiesPlanned);
+        mListener.onScheduleComplete(mSchedule);
 
+    }
+
+    public void planRandom() {
+        SecureRandom random = new SecureRandom();
+        for (Course.Activity activity : mActivities) {
+            int i = random.nextInt(mSchedule.length);
+            while (mSchedule[i] != null)
+                i = random.nextInt(mSchedule.length);
+            mSchedule[i] = activity;
+            activity.plan(i % 20);
+        }
     }
 
     static void shuffleArray(Integer[] ar)
@@ -92,10 +103,6 @@ public class Schedule {
             if (students < Constants.ROOM_CAPACATIES[i]) return i;
         }
         throw new RuntimeException("No suitable room found");
-    }
-
-    private void calculatePenalty() {
-
     }
 
     private void planActivity(Course.Activity activity, int activityIndex) {
@@ -200,7 +207,7 @@ public class Schedule {
 
     public interface ScheduleStateListener {
         void onStateChanged(Course.Activity[] schedule);
-        void onScheduleComplete(Course.Activity[] activities, int penalty, int totalActivities, int plannedActivities);
+        void onScheduleComplete(Course.Activity[] activities);
     }
 
 }

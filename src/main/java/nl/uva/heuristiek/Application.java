@@ -1,7 +1,6 @@
 package nl.uva.heuristiek;
 
 import com.google.gson.*;
-import com.opencsv.CSVWriter;
 import nl.uva.heuristiek.data.DataProcessor;
 import nl.uva.heuristiek.model.Course;
 import nl.uva.heuristiek.model.Schedule;
@@ -12,11 +11,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.sql.ResultSet;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.PriorityQueue;
 
 import org.jfugue.player.Player;
 
@@ -29,7 +24,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     private int mSmallestPenalty = 2000;
     private final SchedulePanel mSchedulePanel;
     FileWriter mLogWriter;
-    CSVWriter mResultsLogWriter;
+    FileWriter mResultsLogWriter;
 
     public Application() {
         setTitle("Simple example");
@@ -50,7 +45,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 mLogWriter = new FileWriter(file);
             if (csvResults.exists()) csvResults.delete();
             csvResults.createNewFile();
-            mResultsLogWriter = new CSVWriter(new FileWriter(csvResults));
+            mResultsLogWriter = new FileWriter(csvResults);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -66,8 +61,13 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 long loops = 0;
                 int dupilcates = 0;
                 while (true) {
-                    Schedule schedule = planScheduleConstructive(students, courses);
-                    mResultsLogWriter.writeNext(new String[]{String.valueOf(schedule.getPenalty())});
+//                    Schedule schedule = planScheduleConstructive(students, courses);
+                    Schedule schedule = planRandom(students, courses);
+                    try {
+                        mResultsLogWriter.write(schedule.getPenalty()+"\n");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     if (schedule.getPenalty() < 40) {
                         JsonObject scheduleJson = new JsonObject();
                         scheduleJson.add("state", gson.toJsonTree(schedule.getTimeslots()));
@@ -78,8 +78,8 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                         mSmallestPenalty = schedule.getPenalty();
                         bestSchedule = schedule;
                     }
-                    if (mSmallestPenalty <= 20 && loops > 1000) break;
-                    log(String.format("Loops: %d, Smallest penalty: %d, Duplicates: %d", loops++, mSmallestPenalty, dupilcates));
+                    if ( loops > 10000) break;
+                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(), mSmallestPenalty, dupilcates));
                 }
                 try {
                     mLogWriter.write(gson.toJson(goodSchedules));
@@ -103,10 +103,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 for (int i = 0; i < averageSeatOccupation.length; i++) {
                     log(i + ": " + averageSeatOccupation[i] + " %");
                 }
-
-                for (Course.Activity activity : bestSchedule.getPenaltyActivities()) {
-                    log(String.format("Penalty for Activity in course %s", activity.getCourse().getCourseId()));
-                }
             }
         }).start();
     }
@@ -116,6 +112,13 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         schedule.setListener(Application.this);
         randomStates.add(schedule.getTimeslots());
         schedule.planCourses();
+        return schedule;
+    }
+
+    private Schedule planRandom(File students, File courses) {
+        Schedule schedule = DataProcessor.process(students, courses);
+        schedule.setListener(this);
+        schedule.planRandom();
         return schedule;
     }
 
@@ -134,10 +137,10 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 //        repaint();
     }
 
-    public void onScheduleComplete(Course.Activity[] activities, int penalty, int totalActivities, int plannedActivities) {
-        mSchedulePanel.setActivities(activities);
-        revalidate();
-        repaint();
+    public void onScheduleComplete(Course.Activity[] activities) {
+//        mSchedulePanel.setActivities(activities);
+//        revalidate();
+//        repaint();
     }
 
     public static void log(String message) {
