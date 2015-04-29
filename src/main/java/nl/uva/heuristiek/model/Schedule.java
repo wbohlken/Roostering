@@ -1,6 +1,5 @@
 package nl.uva.heuristiek.model;
 
-import com.sun.istack.internal.NotNull;
 import com.sun.istack.internal.Nullable;
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.Context;
@@ -27,6 +26,8 @@ public class Schedule extends BaseModel {
     private ScheduleStateListener mListener;
     private Penalty mPenalty = null;
     private Integer[] mTimeslots;
+
+    private static SecureRandom sRandom = new SecureRandom();
 
     public Schedule(Context context, int flags) {
         this(context, flags, null);
@@ -162,7 +163,7 @@ public class Schedule extends BaseModel {
         double value = 1;
         if (!getContext().isSlotUsed(room*20+timeslot)) {
             if (activity.isDayUsed(timeslot / 4)) value -= 0.5;
-            final double studentNegativeValue = value / (double)activity.getStudents().size();
+            final double studentNegativeValue = 1f / (double)activity.getStudents().size();
             for (Student student : activity.getStudents()) {
                 if (!student.isAvailable(timeslot)) {
                     value -= studentNegativeValue;
@@ -230,6 +231,15 @@ public class Schedule extends BaseModel {
     }
 
     public void climbHill() {
+        Penalty oldPenalty = getPenalty();
+        int[] swap = getContext().swap();
+        mPenalty = null;
+        Penalty newPenalty = getPenalty();
+        if (newPenalty.getTotal() > oldPenalty.getTotal()) {
+            getContext().revert(swap);
+        }
+        System.out.printf("Old: %s, New: %s\n", oldPenalty.toString(), newPenalty.toString());
+
 
     }
 

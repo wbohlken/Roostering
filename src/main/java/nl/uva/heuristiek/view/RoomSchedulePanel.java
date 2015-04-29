@@ -1,6 +1,7 @@
 package nl.uva.heuristiek.view;
 
 import nl.uva.heuristiek.Constants;
+import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.model.Course;
 
 import javax.swing.*;

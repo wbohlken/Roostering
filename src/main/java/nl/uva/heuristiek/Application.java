@@ -78,7 +78,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                         mSmallestPenalty = schedule.getPenalty();
                         bestSchedule = schedule;
                     }
-                    if ( loops > 10000) break;
+                    if ( loops > 100) break;
                     log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty().getTotal(), mSmallestPenalty.getTotal(), dupilcates));
                 }
                 try {
@@ -91,7 +91,11 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 }
                 log(String.format("Penalty: %s", bestSchedule.getPenalty().toString()));
 
-                bestSchedule.climbHill();
+                while (true) {
+                    bestSchedule.climbHill();
+                    if (bestSchedule.getPenalty().getTotal() < 0) break;
+                }
+
 
                 int[] occupation = bestSchedule.getRoomOccupation();
                 int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
@@ -113,21 +117,35 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 Application application = new Application();
-//                application.setVisible(true);
+                application.setVisible(true);
             }
         });
     }
 
     public void onStateChanged(Context context) {
-//        mSchedulePanel.setActivities(schedule);
+//        Course.Activity[] activities = new Course.Activity[Constants.ROOMSLOT_COUNT];
+//        final int count = context.getActivities().size();
+//        for (int activityIndex = 0; activityIndex < count; activityIndex++) {
+//            int roomSlot = context.getRoomSlot(activityIndex);
+//            if (roomSlot != -1)
+//                activities[roomSlot] = context.getActivities().get(activityIndex);
+//        }
+//        mSchedulePanel.setActivities(activities);
 //        revalidate();
 //        repaint();
     }
 
     public void onScheduleComplete(Context context) {
-//        mSchedulePanel.setActivities(activities);
-//        revalidate();
-//        repaint();
+        Course.Activity[] activities = new Course.Activity[Constants.ROOMSLOT_COUNT];
+        final int count = context.getActivities().size();
+        for (int activityIndex = 0; activityIndex < count; activityIndex++) {
+            int roomSlot = context.getRoomSlot(activityIndex);
+            if (roomSlot != -1)
+                activities[roomSlot] = context.getActivities().get(activityIndex);
+        }
+        mSchedulePanel.setActivities(activities);
+        revalidate();
+        repaint();
     }
 
     public static void log(String message) {

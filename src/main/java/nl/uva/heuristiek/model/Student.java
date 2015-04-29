@@ -11,14 +11,12 @@ import java.util.Set;
 public class Student extends BaseModel {
     String mStudentId, mFirstName, mLastName;
     Set<Integer> mActivities;
-    List[] mTimeSlots;
 
     public Student(Context context, String[] csvRow) {
         super(context);
         mLastName = csvRow[0];
         mFirstName = csvRow[1];
         mStudentId = csvRow[2];
-        mTimeSlots = new ArrayList[Constants.TIMESLOT_COUNT];
         mActivities = new HashSet<>();
     }
 
@@ -27,17 +25,11 @@ public class Student extends BaseModel {
     }
 
     public boolean isAvailable(int timeSlot) {
-        return mTimeSlots[timeSlot] == null;
-    }
-
-    public int setBusy(Course.Activity activity, int timeslot) {
-        int penalty = 0;
-        if (mTimeSlots[timeslot] != null && mTimeSlots[timeslot].size() >0)
-            penalty++;
-        else if (mTimeSlots[timeslot] == null)
-            mTimeSlots[timeslot] = new ArrayList();
-        mTimeSlots[timeslot].add(activity.getCourse().getCourseId());
-        return penalty;
+        for (Integer activityIndex : mActivities) {
+            int activityTimeSlot = getContext().getRoomSlot(activityIndex) % 20;
+            if (timeSlot == activityTimeSlot) return false;
+        }
+        return true;
     }
 
     public int getPenalty() {

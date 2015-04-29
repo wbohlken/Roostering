@@ -183,8 +183,8 @@ public class Course extends BaseModel {
     public class Activity {
         private int mId;
         private int mType;
-        private int mTimeslot = -1;
         private Set<Student> mStudents;
+        private int mIndex;
 
         public Activity(int type, Set<Student> students, int id) {
             mId = id;
@@ -197,16 +197,17 @@ public class Course extends BaseModel {
         }
 
         public void plan(int timeslot) {
-            mTimeslot = timeslot;
-            mDayUsed[mId][timeslot /4] = true;
-            for (Student student : mStudents) {
-                student.setBusy(this, timeslot);
-            }
+            mDayUsed[mId][getRoomSlot() % 20 / 4] = true;
         }
 
         public int getDay() {
-            if (mTimeslot == -1) return -1;
-            return mTimeslot/4;
+            int timeSlot = getRoomSlot();
+            if (timeSlot == -1) return -1;
+            return timeSlot%20/4;
+        }
+
+        public int getRoomSlot() {
+            return getContext().getActivitySlots()[mIndex];
         }
 
         public String getName() {
@@ -235,7 +236,11 @@ public class Course extends BaseModel {
         }
 
         public int getTimeslot() {
-            return mTimeslot;
+            return getRoomSlot() % 20;
+        }
+
+        public void setIndex(int index) {
+            mIndex = index;
         }
     }
 }

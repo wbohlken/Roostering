@@ -1,6 +1,7 @@
 package nl.uva.heuristiek.view;
 
 import nl.uva.heuristiek.Constants;
+import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.model.Course;
 
 import javax.swing.*;
@@ -15,6 +16,7 @@ public class RoomDaySchedulePanel extends JPanel {
     public static final Color GREEN = new Color(0, 255, 0);
     private Course.Activity[] mActivities;
     private final int mOffset;
+    private Context mContext;
 
     public RoomDaySchedulePanel(Course.Activity[] activities, int room, int day) {
         mActivities = activities;
@@ -48,5 +50,10 @@ public class RoomDaySchedulePanel extends JPanel {
 
     public void setActivities(Course.Activity[] activities) {
         mActivities = activities;
+    }
+
+    public void setContext(Context context) {
+//        mActivities = context.getActivities();
+        mContext = context;
     }
 }
