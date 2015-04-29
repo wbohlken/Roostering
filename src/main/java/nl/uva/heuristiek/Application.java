@@ -59,10 +59,14 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 long loops = 0;
                 int dupilcates = 0;
                 while (true) {
+                    int totalBonusPoints = 0;
                     Schedule schedule = DataProcessor.process(students, courses, Schedule.FLAG_PLAN_METHOD_RANDOM);
                     schedule.setListener(Application.this);
                     schedule.plan();
-//                    Schedule schedule = planRandom(students, courses);
+                    for (Course course : schedule.getmCourses()) {
+                        totalBonusPoints += course.getBonusPoints();
+                    }
+//                  Schedule schedule = planRandom(students, courses);
                     try {
                         mResultsLogWriter.write(schedule.getPenalty()+"\n");
                     } catch (IOException e) {
@@ -78,8 +82,9 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                         mSmallestPenalty = schedule.getPenalty();
                         bestSchedule = schedule;
                     }
-                    if ( loops > 10000) break;
-                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(), mSmallestPenalty, dupilcates));
+
+                    if ( loops > 100) break;
+                    log(String.format("Loops: %d, Penalty: %d, Bonus points: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(), totalBonusPoints, mSmallestPenalty, dupilcates));
                 }
                 try {
                     mLogWriter.write(gson.toJson(goodSchedules));

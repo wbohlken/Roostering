@@ -88,6 +88,10 @@ public class Schedule {
 
     }
 
+    public Collection<Course> getmCourses() {
+        return mCourses;
+    }
+
     public void setListener(ScheduleStateListener listener) {
         mListener = listener;
     }

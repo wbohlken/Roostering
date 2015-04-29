@@ -26,6 +26,7 @@ public class Course {
     private Set<Activity> mLectureActivities;
     private ArrayList<Set<Student>> mStudentGroups;
     private Map<Integer, Set<Activity>> mGroupActivities;
+    private Set<Activity> mAllActivities;
     private boolean[][] mDayUsed;
     private Set<Activity> mPenaltyActivities;
 
@@ -97,7 +98,7 @@ public class Course {
 //        }
 //        return penalty;
     }
-
+    
     public Set<Activity> getPanaltyActivities() {
         return mPenaltyActivities;
     }
@@ -153,42 +154,58 @@ public class Course {
         }
     }
 
-    public Set<Activity> getActivities() {
-        if (mStudents.size() == 0) return new HashSet<>();
-        if (mStudentGroups == null) fillGroups();
-        int activityId = 0;
-        Set<Activity> allActivities = new HashSet<>();
-        if (mGroupActivities == null) {
-            mLectureActivities = new HashSet<>();
-            mGroupActivities = new HashMap<>();
-            for (int i = 0; i < mLectureCount; i++) {
-                Activity activity = new Activity(TYPE_ACTIVITY_LECTURE, mStudents, activityId++);
-                mLectureActivities.add(activity);
-                allActivities.add(activity);
+    public int getUniqueActivityCount() {
+        int uniqueIds = 0;
+        HashMap<Integer, Boolean> activityIds = new HashMap<>();
+        Set<Activity> activities = getActivities();
+        for (Activity activity : activities) {
+            if (!activityIds.containsKey(activity.getId())) {
+                uniqueIds++;
+                activityIds.put(activity.getId(), true);
             }
-            for (int i = 0; i < mWorkGroupCount; i++) {
-                for (int j = 0; j < mStudentGroups.size(); j++) {
-                    if (!mGroupActivities.containsKey(j))
-                        mGroupActivities.put(j, new HashSet<Activity>());
-                    Activity activity = new Activity(TYPE_ACTIVITY_WORKGROUP, mStudentGroups.get(j), activityId);
-                    mGroupActivities.get(j).add(activity);
-                    allActivities.add(activity);
-                }
-                activityId++;
-            }
-            for (int i = 0; i < mPracticumCount; i++) {
-                for (int j = 0; j < mStudentGroups.size(); j++) {
-                    if (!mGroupActivities.containsKey(j))
-                        mGroupActivities.put(j, new HashSet<Activity>());
-                    Activity activity = new Activity(TYPE_ACTIVITY_PRACTICAL, mStudentGroups.get(j), activityId);
-                    mGroupActivities.get(j).add(activity);
-                    allActivities.add(activity);
-                }
-                activityId++;
-            }
-            mDayUsed = new boolean[activityId][Constants.DAY_COUNT];
         }
-        return allActivities;
+
+        return uniqueIds;
+    }
+
+    public Set<Activity> getActivities() {
+        if (mAllActivities == null) {
+            if (mStudents.size() == 0) return new HashSet<>();
+            if (mStudentGroups == null) fillGroups();
+            int activityId = 0;
+            mAllActivities = new HashSet<>();
+            if (mGroupActivities == null) {
+                mLectureActivities = new HashSet<>();
+                mGroupActivities = new HashMap<>();
+                for (int i = 0; i < mLectureCount; i++) {
+                    Activity activity = new Activity(TYPE_ACTIVITY_LECTURE, mStudents, activityId++);
+                    mLectureActivities.add(activity);
+                    mAllActivities.add(activity);
+                }
+                for (int i = 0; i < mWorkGroupCount; i++) {
+                    for (int j = 0; j < mStudentGroups.size(); j++) {
+                        if (!mGroupActivities.containsKey(j))
+                            mGroupActivities.put(j, new HashSet<Activity>());
+                        Activity activity = new Activity(TYPE_ACTIVITY_WORKGROUP, mStudentGroups.get(j), activityId);
+                        mGroupActivities.get(j).add(activity);
+                        mAllActivities.add(activity);
+                    }
+                    activityId++;
+                }
+                for (int i = 0; i < mPracticumCount; i++) {
+                    for (int j = 0; j < mStudentGroups.size(); j++) {
+                        if (!mGroupActivities.containsKey(j))
+                            mGroupActivities.put(j, new HashSet<Activity>());
+                        Activity activity = new Activity(TYPE_ACTIVITY_PRACTICAL, mStudentGroups.get(j), activityId);
+                        mGroupActivities.get(j).add(activity);
+                        mAllActivities.add(activity);
+                    }
+                    activityId++;
+                }
+                mDayUsed = new boolean[activityId][Constants.DAY_COUNT];
+            }
+        }
+        return mAllActivities;
     }
 
     private int determineGroupSize() {
@@ -259,5 +276,59 @@ public class Course {
         public int getTimeslot() {
             return mTimeslot;
         }
+    }
+
+    public int getBonusPoints() {
+        int bonusPoints = 0;
+
+        Set<Activity> activities = getActivities();
+        HashMap<Integer, Set<Activity>> activityIds = new HashMap<>();
+
+        for (Activity activity : activities) {
+            if(!activityIds.containsKey(activity.getId())) {
+                activityIds.put(activity.getId(), new HashSet<>());
+            }
+            activityIds.get(activity.getId()).add(activity);
+        }
+        boolean[] daysUsed = new boolean[5];
+        Collection<Set<Activity>> activitySet = activityIds.values();
+        for (Set<Activity> activitiesById : activitySet) {
+            int timeslot = 4;
+            for(Activity  activity : activitiesById) {
+                if (activity.getTimeslot() / 4 < timeslot) {
+                    timeslot = activity.getTimeslot() / 4;
+                }
+            }
+            daysUsed[timeslot] = true;
+//            System.out.println(this.getName() + " " + timeslot);
+        }
+
+
+        switch (getUniqueActivityCount()) {
+            case 2:
+                if ((daysUsed[0] && daysUsed[3]) || (daysUsed[1] && daysUsed[4])) {
+                    bonusPoints = 20;
+                }
+                break;
+
+            case 3:
+                if (daysUsed[0] && daysUsed[2] && daysUsed[4]) {
+                    bonusPoints = 20;
+                }
+                break;
+
+            case 4:
+                if (daysUsed[0] && daysUsed[1] && daysUsed[3] && daysUsed[4]) {
+                    bonusPoints = 20;
+                }
+                break;
+            case 5:
+                if (daysUsed[0] && daysUsed[1] && daysUsed[2] && daysUsed[3] && daysUsed[4]) {
+                    bonusPoints = 20;
+                }
+                break;
+        }
+
+        return bonusPoints;
     }
 }
