@@ -1,31 +1,29 @@
 package nl.uva.heuristiek.model;
 
 import nl.uva.heuristiek.Constants;
+import nl.uva.heuristiek.Context;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-public class Student {
+public class Student extends BaseModel {
     String mStudentId, mFirstName, mLastName;
-    Set<Course.Activity> mActivities;
+    Set<Integer> mActivities;
     List[] mTimeSlots;
 
-    public Student(String[] csvRow) {
+    public Student(Context context, String[] csvRow) {
+        super(context);
         mLastName = csvRow[0];
         mFirstName = csvRow[1];
         mStudentId = csvRow[2];
         mTimeSlots = new ArrayList[Constants.TIMESLOT_COUNT];
-        mActivities = new HashSet<Course.Activity>();
+        mActivities = new HashSet<>();
     }
 
-    public Student(Student other) {
-        mStudentId = other.mStudentId;
-        mFirstName = other.mFirstName;
-        mLastName = other.mLastName;
-        mTimeSlots = new ArrayList[Constants.TIMESLOT_COUNT];
-        mActivities = new HashSet<>();
+    public void addActivity(int activityIndex) {
+        mActivities.add(activityIndex);
     }
 
     public boolean isAvailable(int timeSlot) {
@@ -39,15 +37,14 @@ public class Student {
         else if (mTimeSlots[timeslot] == null)
             mTimeSlots[timeslot] = new ArrayList();
         mTimeSlots[timeslot].add(activity.getCourse().getCourseId());
-        mActivities.add(activity);
         return penalty;
     }
 
     public int getPenalty() {
         Set<Integer> timeslots = new HashSet<>();
         int penalty = 0;
-        for (Course.Activity activity : mActivities) {
-            if (!timeslots.add(activity.getTimeslot()))
+        for (Integer activityIndex : mActivities) {
+            if (!timeslots.add(getActivities().get(activityIndex).getTimeslot()))
                 penalty++;
         }
         return penalty;

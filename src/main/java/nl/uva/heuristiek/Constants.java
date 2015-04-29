@@ -8,6 +8,7 @@ public class Constants {
     public static final int DAY_COUNT = 5;
     public static final int INDEX_COUNT = 4;
     public static final int TIMESLOT_COUNT = DAY_COUNT*INDEX_COUNT;
+    public static final int ROOMSLOT_COUNT = ROOM_COUNT*TIMESLOT_COUNT;
 
     public static final int[] ROOM_CAPACATIES = {
             20,

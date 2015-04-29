@@ -1,6 +1,7 @@
 package nl.uva.heuristiek.model;
 
 import nl.uva.heuristiek.Constants;
+import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.Util;
 
 import java.awt.*;
@@ -9,7 +10,7 @@ import java.util.*;
 /**
  * Created by remco on 07/04/15.
  */
-public class Course {
+public class Course extends BaseModel {
 
     private static final int TYPE_ACTIVITY_LECTURE = 0;
     private static final int TYPE_ACTIVITY_WORKGROUP = 1;
@@ -30,7 +31,8 @@ public class Course {
     private Set<Activity> mPenaltyActivities;
 
 
-    public Course(String[] csvRow) {
+    public Course(Context context, String[] csvRow) {
+        super(context);
         mCourseId = csvRow[0];
         mName = csvRow[1];
         mLectureCount = Util.tryParseInt(csvRow[2]);
@@ -39,16 +41,6 @@ public class Course {
         mPracticumCount = Util.tryParseInt(csvRow[5]);
         int practicumCapacity = Util.tryParseInt(csvRow[6]);
         mGroupCount = Math.max(workGroupCapacity, practicumCapacity);
-    }
-
-    public Course(Course other) {
-        mCourseId = other.mCourseId;
-        mName = other.mName;
-        mLectureCount = other.mLectureCount;
-        mWorkGroupCount = other.mWorkGroupCount;
-        mPracticumCount = other.mPracticumCount;
-        mGroupCount = other.mGroupCount;
-        mStudents = Util.deepClone(other.mStudents);
     }
 
     private int getTotalActivities() {
@@ -62,7 +54,9 @@ public class Course {
         HashSet<Integer> days = new HashSet<>();
         if (mLectureActivities != null) {
             for (Activity activity : mLectureActivities) {
-                lectureDays.add(activity.getDay());
+                int day = activity.getDay();
+                if (day == -1) return 0;
+                lectureDays.add(day);
             }
         }
         if (mStudentGroups == null || (mStudentGroups.size() == 1 && mLectureCount > 0)) {
@@ -71,8 +65,11 @@ public class Course {
             for (int i = 0; i < mStudentGroups.size(); i++) {
                 days.addAll(lectureDays);
                 if (mGroupActivities != null) {
-                    for (Activity activity : mGroupActivities.get(i))
-                        days.add(activity.getDay());
+                    for (Activity activity : mGroupActivities.get(i)) {
+                        int day = activity.getDay();
+                        if (day == -1) return 0;
+                        days.add(day);
+                    }
                     activityPenalty += (getTotalActivities() - days.size()) * 10;
                 }
                 days.clear();
@@ -98,28 +95,8 @@ public class Course {
 //        return penalty;
     }
 
-    public Set<Activity> getPanaltyActivities() {
-        return mPenaltyActivities;
-    }
-
     public String getCourseId() {
         return mCourseId;
-    }
-
-    public String getName() {
-        return mName;
-    }
-
-    public int getLectureCount() {
-        return mLectureCount;
-    }
-
-    public int getWorkGroupCount() {
-        return mWorkGroupCount;
-    }
-
-    public int getPracticumCount() {
-        return mPracticumCount;
     }
 
     public void addStudent(Student student) {
@@ -153,7 +130,7 @@ public class Course {
         }
     }
 
-    public Set<Activity> getActivities() {
+    public Set<Activity> getCourseActivities() {
         if (mStudents.size() == 0) return new HashSet<>();
         if (mStudentGroups == null) fillGroups();
         int activityId = 0;
@@ -195,7 +172,7 @@ public class Course {
         return mGroupCount;
     }
 
-    public Set<Student> getStudents() {
+    public Set<Student> getCourseStudents() {
         return mStudents;
     }
 
@@ -206,7 +183,7 @@ public class Course {
     public class Activity {
         private int mId;
         private int mType;
-        private int mTimeslot;
+        private int mTimeslot = -1;
         private Set<Student> mStudents;
 
         public Activity(int type, Set<Student> students, int id) {
@@ -228,6 +205,7 @@ public class Course {
         }
 
         public int getDay() {
+            if (mTimeslot == -1) return -1;
             return mTimeslot/4;
         }
 

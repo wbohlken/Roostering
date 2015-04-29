@@ -3,6 +3,7 @@ package nl.uva.heuristiek;
 import com.google.gson.*;
 import nl.uva.heuristiek.data.DataProcessor;
 import nl.uva.heuristiek.model.Course;
+import nl.uva.heuristiek.model.Penalty;
 import nl.uva.heuristiek.model.Schedule;
 import nl.uva.heuristiek.view.SchedulePanel;
 
@@ -19,7 +20,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 
     String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
 
-    private int mSmallestPenalty = 2000;
+    private Penalty mSmallestPenalty = null;
     private final SchedulePanel mSchedulePanel;
     FileWriter mLogWriter;
     FileWriter mResultsLogWriter;
@@ -59,7 +60,8 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 long loops = 0;
                 int dupilcates = 0;
                 while (true) {
-                    Schedule schedule = DataProcessor.process(students, courses, Schedule.FLAG_PLAN_METHOD_RANDOM);
+                    Context context = DataProcessor.process(students, courses);
+                    Schedule schedule = new Schedule(context, Schedule.FLAG_PLAN_METHOD_CONSTRUCTIVE);
                     schedule.setListener(Application.this);
                     schedule.plan();
 //                    Schedule schedule = planRandom(students, courses);
@@ -68,18 +70,16 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    if (schedule.getPenalty() < 40) {
+                    if (schedule.getPenalty().getTotal() < 40) {
                         JsonObject scheduleJson = new JsonObject();
-                        scheduleJson.add("state", gson.toJsonTree(schedule.getTimeslots()));
-                        scheduleJson.addProperty("penalty", schedule.getPenalty());
                         goodSchedules.add(scheduleJson);
                     }
-                    if (schedule.getPenalty() < mSmallestPenalty) {
+                    if (mSmallestPenalty == null || schedule.getPenalty().getTotal() < mSmallestPenalty.getTotal()) {
                         mSmallestPenalty = schedule.getPenalty();
                         bestSchedule = schedule;
                     }
                     if ( loops > 10000) break;
-                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(), mSmallestPenalty, dupilcates));
+                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty().getTotal(), mSmallestPenalty.getTotal(), dupilcates));
                 }
                 try {
                     mLogWriter.write(gson.toJson(goodSchedules));
@@ -89,7 +89,9 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                log(String.format("Penalty: %d", bestSchedule.getPenalty()));
+                log(String.format("Penalty: %s", bestSchedule.getPenalty().toString()));
+
+                bestSchedule.climbHill();
 
                 int[] occupation = bestSchedule.getRoomOccupation();
                 int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
@@ -116,13 +118,13 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         });
     }
 
-    public void onStateChanged(Course.Activity[] schedule) {
+    public void onStateChanged(Context context) {
 //        mSchedulePanel.setActivities(schedule);
 //        revalidate();
 //        repaint();
     }
 
-    public void onScheduleComplete(Course.Activity[] activities) {
+    public void onScheduleComplete(Context context) {
 //        mSchedulePanel.setActivities(activities);
 //        revalidate();
 //        repaint();

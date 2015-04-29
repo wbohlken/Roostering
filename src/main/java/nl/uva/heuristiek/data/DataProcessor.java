@@ -2,6 +2,7 @@ package nl.uva.heuristiek.data;
 
 import com.opencsv.CSVReader;
 import com.sun.istack.internal.NotNull;
+import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.model.Course;
 import nl.uva.heuristiek.model.Schedule;
 import nl.uva.heuristiek.model.Student;
@@ -20,24 +21,25 @@ public class DataProcessor {
     private static ArrayList<Student> mStudents;
 
     @NotNull
-    public static Schedule process(File input, File vakken, int flags) {
+    public static Context process(File input, File vakken) {
         try {
+            Context context = new Context();
             mCourseMap = new HashMap<>();
             mStudents = new ArrayList<>(660);
 
             CSVReader reader = new CSVReader(new FileReader(vakken));
             String[] nextLine;
             while ((nextLine = reader.readNext()) != null) {
-                mCourseMap.put(nextLine[1], new Course(nextLine));
+                mCourseMap.put(nextLine[1], new Course(context, nextLine));
             }
             reader.close();
 
             reader = new CSVReader(new FileReader(input));
 
             while ((nextLine = reader.readNext()) != null) {
+                Student student = new Student(context, nextLine);
+                mStudents.add(student);
                 for (int i = 3; i < nextLine.length; i++) {
-                    Student student = new Student(nextLine);
-                    mStudents.add(student);
                     Course course = mCourseMap.get(nextLine[i]);
                     if (course != null) {
                         course.addStudent(student);
@@ -45,7 +47,9 @@ public class DataProcessor {
                 }
             }
             reader.close();
-            return new Schedule(mCourseMap.values(), mStudents, flags);
+
+            context.init(mCourseMap, mStudents);
+            return context;
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

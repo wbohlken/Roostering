@@ -16,18 +16,4 @@ public class Util {
         }
     }
 
-    public static Collection<Course> deepClone(Collection<Course> courseCollection) {
-        Collection<Course> cloned = new HashSet<Course>(courseCollection.size());
-        for (Course course : courseCollection)
-            cloned.add(new Course(course));
-        return cloned;
-    }
-
-    public static Set<Student> deepClone(Set<Student> studentCollection) {
-        if (studentCollection == null) return null;
-        Set<Student> cloned = new HashSet<Student>(studentCollection.size());
-        for (Student student : studentCollection)
-            cloned.add(new Student(student));
-        return cloned;
-    }
 }
