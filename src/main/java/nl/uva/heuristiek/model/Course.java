@@ -98,7 +98,7 @@ public class Course {
 //        }
 //        return penalty;
     }
-    
+
     public Set<Activity> getPanaltyActivities() {
         return mPenaltyActivities;
     }

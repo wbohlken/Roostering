@@ -211,6 +211,14 @@ public class Schedule {
         return mPenalty;
     }
 
+    public int getBonusPoints() {
+        int bonusPoints = 0;
+        for (Course course : mCourses) {
+            bonusPoints += course.getBonusPoints();
+        }
+        return bonusPoints;
+    }
+
     public int[] getRoomOccupation() {
         int[] roomOccupation = new int[Constants.ROOM_COUNT];
 

@@ -19,7 +19,9 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 
     String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
 
+    private int mBestScore = -2000;
     private int mSmallestPenalty = 2000;
+    private int mMostBonusPoints = 0;
     private final SchedulePanel mSchedulePanel;
     FileWriter mLogWriter;
     FileWriter mResultsLogWriter;
@@ -78,13 +80,18 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                         scheduleJson.addProperty("penalty", schedule.getPenalty());
                         goodSchedules.add(scheduleJson);
                     }
-                    if (schedule.getPenalty() < mSmallestPenalty) {
-                        mSmallestPenalty = schedule.getPenalty();
+                    if (mBestScore < schedule.getBonusPoints() - schedule.getPenalty()) {
                         bestSchedule = schedule;
                     }
+                    if (mSmallestPenalty > schedule.getPenalty()) {
+                        mSmallestPenalty = schedule.getPenalty();
+                    }
+                    if (totalBonusPoints > mMostBonusPoints) {
+                        mMostBonusPoints = totalBonusPoints;
+                    }
 
-                    if ( loops > 100) break;
-                    log(String.format("Loops: %d, Penalty: %d, Bonus points: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(), totalBonusPoints, mSmallestPenalty, dupilcates));
+                    if ( loops > 10000) break;
+                    log(String.format("Loops: %d, Penalty: %d, Bonus points: %d, Smallest penalty: %d, Most Bonus points: %d, Duplicates: %d", loops++, schedule.getPenalty(), totalBonusPoints, mSmallestPenalty, mMostBonusPoints, dupilcates));
                 }
                 try {
                     mLogWriter.write(gson.toJson(goodSchedules));
@@ -95,19 +102,20 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                     e.printStackTrace();
                 }
                 log(String.format("Penalty: %d", bestSchedule.getPenalty()));
+                log(String.format("Bonus: %d", bestSchedule.getBonusPoints()));
 
-                int[] occupation = bestSchedule.getRoomOccupation();
-                int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
+//                int[] occupation = bestSchedule.getRoomOccupation();
+//                int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
 
-                log("Room occupations");
-                for (int i = 0; i < occupation.length; i++) {
-                    System.out.println(i + ": " + occupation[i] + " %");
-                }
-
-                log("Average seat occupation per room");
-                for (int i = 0; i < averageSeatOccupation.length; i++) {
-                    log(i + ": " + averageSeatOccupation[i] + " %");
-                }
+//                log("Room occupations");
+//                for (int i = 0; i < occupation.length; i++) {
+//                    System.out.println(i + ": " + occupation[i] + " %");
+//                }
+//
+//                log("Average seat occupation per room");
+//                for (int i = 0; i < averageSeatOccupation.length; i++) {
+//                    log(i + ": " + averageSeatOccupation[i] + " %");
+//                }
             }
         }).start();
     }
