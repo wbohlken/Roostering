@@ -18,8 +18,8 @@ public class RoomDaySchedulePanel extends JPanel {
     private final int mOffset;
     private Context mContext;
 
-    public RoomDaySchedulePanel(Course.Activity[] activities, int room, int day) {
-        mActivities = activities;
+    public RoomDaySchedulePanel(int room, int day) {
+        mActivities = null;
         mOffset = room * 20 + day * 4;
 
     }

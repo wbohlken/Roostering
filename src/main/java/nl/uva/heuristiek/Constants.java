@@ -29,4 +29,7 @@ public class Constants {
         "C0.110",
         "C1.11"
     };
+    public static final int MAX_POPULATION_COUNT = 20;
+    public static final int MIN_POPULATION_COUNT = 10;
+    public static final boolean ELITISM = true;
 }

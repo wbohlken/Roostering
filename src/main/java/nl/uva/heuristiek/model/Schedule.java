@@ -23,11 +23,16 @@ public class Schedule extends BaseModel {
     private static final int MASK_PLAN_METHOD = 0x1 << 2;
     private final int mFlags;
 
+
     private ScheduleStateListener mListener;
     private Penalty mPenalty = null;
     private Integer[] mTimeslots;
 
+    private Set<Integer> mSlotsUsed;
+    private int[] mActivitySlots;
+
     private static SecureRandom sRandom = new SecureRandom();
+    private int mStepActivityIndex = 0;
 
     public Schedule(Context context, int flags) {
         this(context, flags, null);
@@ -35,6 +40,10 @@ public class Schedule extends BaseModel {
 
     public Schedule(Context context, int flags, @Nullable Integer[] timeslots) {
         super(context);
+        context.setSchedule(this);
+        mSlotsUsed = new HashSet<>();
+        mActivitySlots = new int[context.getActivities().size()];
+        Arrays.fill(mActivitySlots, -1);
         mFlags = flags;
         Collections.sort(getActivities(), getActivityComparator(flags & MASK_ACTIVITY_SORT));
         if (timeslots == null) {
@@ -46,6 +55,10 @@ public class Schedule extends BaseModel {
         } else
             mTimeslots = timeslots;
 
+    }
+
+    public int[] getActivitySlots() {
+        return mActivitySlots;
     }
 
     private Comparator<Course.Activity> getActivityComparator(int activitySortFlag) {
@@ -79,6 +92,7 @@ public class Schedule extends BaseModel {
 
     public void setListener(ScheduleStateListener listener) {
         mListener = listener;
+        mListener.onStateChanged(getContext(), this);
     }
 
     public Integer[] getTimeslots() {
@@ -89,9 +103,9 @@ public class Schedule extends BaseModel {
         final int count = getActivities().size();
         for (int i = 0; i < count; i++) {
             planActivity(getActivities().get(i), i);
-            mListener.onStateChanged(getContext());
+            mListener.onStateChanged(getContext(), this);
         }
-        mListener.onScheduleComplete(getContext());
+        mListener.onScheduleComplete(this);
 
     }
 
@@ -106,15 +120,49 @@ public class Schedule extends BaseModel {
         }
     }
 
+    public boolean planStep(int size) {
+        boolean isComplete;
+        switch (mFlags & MASK_PLAN_METHOD) {
+            case FLAG_PLAN_METHOD_RANDOM:
+                isComplete = !planStepRandom(size);
+                return isComplete;
+            default:
+                isComplete = !planStepCourses(size);
+        }
+        if (isComplete)
+            mListener.onScheduleComplete(this);
+        return !isComplete;
+    }
+
     private void planRandom() {
-        SecureRandom random = new SecureRandom();
         for (int activityIndex = 0; activityIndex < getActivities().size(); activityIndex++) {
-            int i = random.nextInt(Constants.ROOMSLOT_COUNT);
-            while (getContext().isSlotUsed(i))
-                i = random.nextInt(Constants.ROOMSLOT_COUNT);
+            int i = sRandom.nextInt(Constants.ROOMSLOT_COUNT);
+            while (isSlotUsed(i))
+                i = sRandom.nextInt(Constants.ROOMSLOT_COUNT);
             getContext().setActivitySlot(activityIndex, i);
             getActivities().get(activityIndex).plan(i % 20);
         }
+    }
+
+    public boolean planStepRandom(int size) {
+        for (int steps = 0; steps < size; steps++) {
+            try {
+                int i = sRandom.nextInt(Constants.ROOMSLOT_COUNT);
+                while (isSlotUsed(i))
+                    i = sRandom.nextInt(Constants.ROOMSLOT_COUNT);
+                getContext().setActivitySlot(mStepActivityIndex, i);
+                getActivities().get(mStepActivityIndex).plan(i % 20);
+                mListener.onStateChanged(getContext(), this);
+                mStepActivityIndex++;
+            } catch (ArrayIndexOutOfBoundsException e) {
+                return false;
+            }
+        }
+        return (mStepActivityIndex == getActivities().size());
+    }
+
+    public boolean planStepCourses(int size) {
+        return false;
     }
 
     static void shuffleArray(Integer[] ar)
@@ -161,7 +209,7 @@ public class Schedule extends BaseModel {
 
     private double checkContraints(Course.Activity activity, int room, int timeslot) {
         double value = 1;
-        if (!getContext().isSlotUsed(room*20+timeslot)) {
+        if (!isSlotUsed(room * 20 + timeslot)) {
             if (activity.isDayUsed(timeslot / 4)) value -= 0.5;
             final double studentNegativeValue = 1f / (double)activity.getStudents().size();
             for (Student student : activity.getStudents()) {
@@ -174,8 +222,8 @@ public class Schedule extends BaseModel {
         return 0;
     }
 
-    public Penalty getPenalty() {
-        if (mPenalty == null) {
+    public Penalty getPenalty(boolean forceCalculation) {
+        if (mPenalty == null || forceCalculation) {
             int coursePenalty = 0;
             for (Course course : getCourseMap().values()) {
                 coursePenalty += course.getPenalty();
@@ -230,22 +278,50 @@ public class Schedule extends BaseModel {
         return seatOccupation;
     }
 
-    public void climbHill() {
-        Penalty oldPenalty = getPenalty();
-        int[] swap = getContext().swap();
-        mPenalty = null;
-        Penalty newPenalty = getPenalty();
-        if (newPenalty.getTotal() > oldPenalty.getTotal()) {
-            getContext().revert(swap);
+    public void climbHill(int stepSize) {
+        for (int i = 0; i < stepSize; i++) {
+            mPenalty = null;
+            Penalty oldPenalty = getPenalty(false);
+            int[] swap = swap();
+            mPenalty = null;
+            Penalty newPenalty = getPenalty(false);
+            if (newPenalty.getTotal() > oldPenalty.getTotal()) {
+                swap(swap);
+            }
+            System.out.printf("Old: %s, New: %s\n", oldPenalty.toString(), newPenalty.toString());
+            mListener.onScheduleComplete(this);
         }
-        System.out.printf("Old: %s, New: %s\n", oldPenalty.toString(), newPenalty.toString());
+    }
 
+    public void setActivitySlot(int position, int roomSlot) {
+        mActivitySlots[position] = roomSlot;
+        mSlotsUsed.add(roomSlot);
+    }
+
+    public boolean isSlotUsed(int roomSlot) {
+        return mSlotsUsed.contains(roomSlot);
+    }
+
+    public int getRoomSlot(int activityIndex) {
+        return mActivitySlots[activityIndex];
+    }
+
+    public int[] swap() {
+        final int activitiesSize = getActivities().size();
+        return swap(new int[]{sRandom.nextInt(activitiesSize), sRandom.nextInt(activitiesSize)});
 
     }
 
+    public int[] swap(int[] indices) {
+        int roomSlot1 = mActivitySlots[indices[1]];
+        mActivitySlots[indices[1]] = mActivitySlots[indices[0]];
+        mActivitySlots[indices[0]] = roomSlot1;
+        return new int[]{indices[1],indices[0]};
+    }
+
     public interface ScheduleStateListener {
-        void onStateChanged(Context context);
-        void onScheduleComplete(Context context);
+        void onStateChanged(Context context, Schedule schedule);
+        void onScheduleComplete(Schedule schedule);
     }
 
 }

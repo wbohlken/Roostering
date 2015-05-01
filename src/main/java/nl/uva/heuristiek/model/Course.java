@@ -119,7 +119,8 @@ public class Course extends BaseModel {
                 mStudentGroups.add(currentGroup);
             } else {
                 Set<Student> lastGroup = mStudentGroups.get(mStudentGroups.size() - 1);
-                if (currentGroup.size() + lastGroup.size() < groupSize) {
+                if (currentGroup.size() < 3) mStudentGroups.remove(lastGroup);
+                else if (currentGroup.size() + lastGroup.size() < groupSize) {
                     for (Student student : currentGroup) {
                         lastGroup.add(student);
                     }
