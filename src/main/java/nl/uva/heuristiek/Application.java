@@ -11,6 +11,8 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.HashSet;
 
 
@@ -61,9 +63,12 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 JsonArray goodSchedules = new JsonArray();
                 long loops = 0;
                 int dupilcates = 0;
+
+                ArrayList<ArrayList<Integer>> values = new ArrayList<>();
+
                 while (true) {
-//                    Schedule schedule = planScheduleConstructive(students, courses);
-                    Schedule schedule = planRandom(students, courses);
+                    Schedule schedule = planScheduleConstructive(students, courses);
+//                    Schedule schedule = planRandom(students, courses);
                     try {
                         mResultsLogWriter.write(schedule.getPenalty()+"\n");
                     } catch (IOException e) {
@@ -87,9 +92,18 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                         mSmallestCoursePenalty = schedule.getCoursePenalty();
                     }
                     if ( loops > 10000) break;
-                    log(String.format("Loops: %d, Total Penalty: %d, Student Penalty: %d, Course Penalty: %d, Smallest penalty: %d,Smallest Course penalty: %d, Smallest Student penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(),  schedule.getStudentPenalty(), schedule.getCoursePenalty(), mSmallestPenalty, mSmallestCoursePenalty, mSmallestStudentPenalty, dupilcates));
+
+                    log(String.format("Loops: %d, Total Penalty: %d, Student Penalty: %d, Course Penalty: %d, Smallest penalty: %d,Smallest Course penalty: %d, Smallest Student penalty: %d, Duplicates: %d",
+                            loops++, schedule.getPenalty(),  schedule.getStudentPenalty(), schedule.getCoursePenalty(), mSmallestPenalty, mSmallestCoursePenalty, mSmallestStudentPenalty, dupilcates));
+
+                    ArrayList<Integer> value = new ArrayList<>();
+                    value.add(schedule.getPenalty());
+                    value.add(schedule.getStudentPenalty());
+                    value.add(schedule.getCoursePenalty());
+                    values.add(value);
                 }
                 try {
+                    Util.generateCsvFile("constructive_penalties.csv", values);
                     mLogWriter.write(gson.toJson(goodSchedules));
                     mLogWriter.close();
 
