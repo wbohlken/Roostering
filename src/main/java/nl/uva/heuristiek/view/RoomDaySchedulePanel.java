@@ -6,23 +6,15 @@ import nl.uva.heuristiek.model.Course;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.Arrays;
 
 /**
  * Created by remco on 12/04/15.
  */
 public class RoomDaySchedulePanel extends JPanel {
 
-    public static final Color RED = new Color(255, 0, 0);
-    public static final Color GREEN = new Color(0, 255, 0);
-    private Course.Activity[] mActivities;
-    private final int mOffset;
     private Context mContext;
-
-    public RoomDaySchedulePanel(int room, int day) {
-        mActivities = null;
-        mOffset = room * 20 + day * 4;
-
-    }
+    private Course.Activity[] mDayActivities = new Course.Activity[Constants.INDEX_COUNT];
 
     @Override
     protected void paintComponent(Graphics g) {
@@ -30,30 +22,36 @@ public class RoomDaySchedulePanel extends JPanel {
         Graphics2D g2d = (Graphics2D) g;
         Dimension size = getSize();
         int cellHeight = (int) (size.getHeight() / Constants.INDEX_COUNT);
-        if (mActivities != null) {
-            for (int i = 0; i < Constants.INDEX_COUNT; i++) {
-                if (mActivities[mOffset + i] == null)
-                    g2d.setColor(Color.GREEN);
-                else {
-                    g2d.setColor(mActivities[mOffset + i].getColor());
-                }
-                g2d.fillRect(0, cellHeight * i, (int) size.getWidth(), cellHeight);
-                if (mActivities[mOffset + i] != null) {
-                    g2d.setColor(Color.WHITE);
-                    g2d.setFont(new Font(null, 0, 12));
-                    g2d.drawString(mActivities[mOffset + i].getCourse().getCourseId() + "\n" + mActivities[mOffset + i].getStudents().size() + " studenten", 10, cellHeight * i + 20);
-                    g2d.drawString(String.valueOf(mActivities[mOffset + i].getId()), 20, cellHeight * i + 50);
-                }
+        for (int i = 0; i < mDayActivities.length; i++) {
+            if (mDayActivities[i] == null)
+                g2d.setColor(Color.GREEN);
+            else {
+                g2d.setColor(mDayActivities[i].getColor());
+            }
+            g2d.fillRect(0, cellHeight * i, (int) size.getWidth(), cellHeight);
+            if (mDayActivities[i] != null) {
+                g2d.setColor(Color.WHITE);
+                g2d.setFont(new Font(null, 0, 12));
+                g2d.drawString(mDayActivities[i].getCourse().getCourseId() + "\n" + mDayActivities[i].getStudents().size() + " studenten", 10, cellHeight * i + 20);
+                g2d.drawString(String.valueOf(mDayActivities[i].getId()), 20, cellHeight * i + 50);
             }
         }
-    }
-
-    public void setActivities(Course.Activity[] activities) {
-        mActivities = activities;
     }
 
     public void setContext(Context context) {
 //        mActivities = context.getActivities();
         mContext = context;
+    }
+
+    public void addActivity(int time, Course.Activity activity) {
+        mDayActivities[time] = activity;
+    }
+
+    public void reset() {
+        Arrays.fill(mDayActivities, null);
+    }
+
+    public void removeActivity(int time) {
+        mDayActivities[time] = null;
     }
 }

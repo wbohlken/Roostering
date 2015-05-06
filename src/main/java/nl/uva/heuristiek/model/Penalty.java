@@ -4,11 +4,12 @@ package nl.uva.heuristiek.model;
  * Created by remco on 29/04/15.
  */
 public class Penalty {
-    private int mCoursePenalty, mStudentPenalty;
+    private int mCoursePenalty, mStudentPenalty, mSmallRoomPenalty;
 
-    public Penalty(int coursePenalty, int studentPenalty) {
+    public Penalty(int coursePenalty, int studentPenalty, int smallRoomPenalty) {
         mCoursePenalty = coursePenalty;
         mStudentPenalty = studentPenalty;
+        mSmallRoomPenalty = smallRoomPenalty;
     }
 
     public int getCoursePenalty() {
@@ -21,10 +22,10 @@ public class Penalty {
 
     @Override
     public String toString() {
-        return String.format("Total penalty: %d, Course penalty: %d, Student penalty: %d", mCoursePenalty+mStudentPenalty, mCoursePenalty, mStudentPenalty);
+        return String.format("Total penalty: %d\nCourse penalty: %d\nStudent penalty: %d\nSmallRoom penalty: %d", getTotal(), mCoursePenalty, mStudentPenalty, mSmallRoomPenalty);
     }
 
     public int getTotal() {
-        return mCoursePenalty+mStudentPenalty;
+        return mCoursePenalty+mStudentPenalty+mSmallRoomPenalty;
     }
 }

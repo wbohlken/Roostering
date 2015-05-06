@@ -3,6 +3,8 @@ package nl.uva.heuristiek.model;
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.Util;
+import nl.uva.heuristiek.util.*;
+import nl.uva.heuristiek.util.Random;
 
 import java.awt.*;
 import java.util.*;
@@ -23,12 +25,13 @@ public class Course extends BaseModel {
     private int mPracticumCount;
 
     private int mGroupCount;
-    private Set<Student> mStudents = new HashSet<>();
+    private ArrayList<Integer> mStudents = new ArrayList<>();
     private Set<Activity> mLectureActivities;
-    private ArrayList<Set<Student>> mStudentGroups;
+    private ArrayList<ArrayList<Integer>> mStudentGroups;
     private Map<Integer, Set<Activity>> mGroupActivities;
     private boolean[][] mDayUsed;
     private Set<Activity> mPenaltyActivities;
+    private Set<Activity> mAllActivities;
 
 
     public Course(Context context, String[] csvRow) {
@@ -48,13 +51,13 @@ public class Course extends BaseModel {
     }
 
 
-    public int getPenalty() {
+    public int getPenalty(Schedule schedule) {
         int activityPenalty = 0;
         HashSet<Integer> lectureDays = new HashSet<>(5);
         HashSet<Integer> days = new HashSet<>();
         if (mLectureActivities != null) {
             for (Activity activity : mLectureActivities) {
-                int day = activity.getDay();
+                int day = activity.getDay(schedule);
                 if (day == -1) return 0;
                 lectureDays.add(day);
             }
@@ -66,7 +69,7 @@ public class Course extends BaseModel {
                 days.addAll(lectureDays);
                 if (mGroupActivities != null) {
                     for (Activity activity : mGroupActivities.get(i)) {
-                        int day = activity.getDay();
+                        int day = activity.getDay(schedule);
                         if (day == -1) return 0;
                         days.add(day);
                     }
@@ -100,28 +103,27 @@ public class Course extends BaseModel {
     }
 
     public void addStudent(Student student) {
-        mStudents.add(student);
+        mStudents.add(student.getId());
     }
 
     public void fillGroups() {
-        mStudentGroups = new ArrayList<Set<Student>>();
+        mStudentGroups = new ArrayList<>();
         int groupSize = determineGroupSize();
-        Set<Student> currentGroup = new HashSet<Student>(groupSize);
-        for (Student student : mStudents) {
+        ArrayList<Integer> currentGroup = new ArrayList<>(groupSize);
+        for (Integer student : mStudents) {
             currentGroup.add(student);
             if (currentGroup.size() == groupSize) {
                 mStudentGroups.add(currentGroup);
-                currentGroup = new HashSet<Student>(groupSize);
+                currentGroup = new ArrayList<>(groupSize);
             }
         }
         if (currentGroup.size() > 0) {
             if (mStudentGroups.size() == 0) {
                 mStudentGroups.add(currentGroup);
             } else {
-                Set<Student> lastGroup = mStudentGroups.get(mStudentGroups.size() - 1);
-                if (currentGroup.size() < 3) mStudentGroups.remove(lastGroup);
-                else if (currentGroup.size() + lastGroup.size() < groupSize) {
-                    for (Student student : currentGroup) {
+                ArrayList<Integer> lastGroup = mStudentGroups.get(mStudentGroups.size() - 1);
+                if (currentGroup.size() + lastGroup.size() < groupSize) {
+                    for (Integer student : currentGroup) {
                         lastGroup.add(student);
                     }
                 } else {
@@ -132,83 +134,89 @@ public class Course extends BaseModel {
     }
 
     public Set<Activity> getCourseActivities() {
-        if (mStudents.size() == 0) return new HashSet<>();
-        if (mStudentGroups == null) fillGroups();
-        int activityId = 0;
-        Set<Activity> allActivities = new HashSet<>();
-        if (mGroupActivities == null) {
-            mLectureActivities = new HashSet<>();
-            mGroupActivities = new HashMap<>();
-            for (int i = 0; i < mLectureCount; i++) {
-                Activity activity = new Activity(TYPE_ACTIVITY_LECTURE, mStudents, activityId++);
-                mLectureActivities.add(activity);
-                allActivities.add(activity);
-            }
-            for (int i = 0; i < mWorkGroupCount; i++) {
-                for (int j = 0; j < mStudentGroups.size(); j++) {
-                    if (!mGroupActivities.containsKey(j))
-                        mGroupActivities.put(j, new HashSet<Activity>());
-                    Activity activity = new Activity(TYPE_ACTIVITY_WORKGROUP, mStudentGroups.get(j), activityId);
-                    mGroupActivities.get(j).add(activity);
-                    allActivities.add(activity);
+        if (mAllActivities == null) {
+            synchronized (this) {
+                if (mAllActivities == null) {
+                    if (mStudents.size() == 0) return new HashSet<>();
+                    if (mStudentGroups == null) fillGroups();
+                    int activityId = 0;
+                    mAllActivities = new HashSet<>();
+                    if (mGroupActivities == null) {
+                        mLectureActivities = new HashSet<>();
+                        mGroupActivities = new HashMap<>();
+                        for (int i = 0; i < mLectureCount; i++) {
+                            Activity activity = new Activity(TYPE_ACTIVITY_LECTURE, mStudents, activityId++);
+                            mLectureActivities.add(activity);
+                            mAllActivities.add(activity);
+                        }
+                        for (int i = 0; i < mWorkGroupCount; i++) {
+                            for (int j = 0; j < mStudentGroups.size(); j++) {
+                                if (!mGroupActivities.containsKey(j))
+                                    mGroupActivities.put(j, new HashSet<Activity>());
+                                Activity activity = new Activity(TYPE_ACTIVITY_WORKGROUP, mStudentGroups.get(j), activityId);
+                                mGroupActivities.get(j).add(activity);
+                                mAllActivities.add(activity);
+                            }
+                            activityId++;
+                        }
+                        for (int i = 0; i < mPracticumCount; i++) {
+                            for (int j = 0; j < mStudentGroups.size(); j++) {
+                                if (!mGroupActivities.containsKey(j))
+                                    mGroupActivities.put(j, new HashSet<Activity>());
+                                Activity activity = new Activity(TYPE_ACTIVITY_PRACTICAL, mStudentGroups.get(j), activityId);
+                                mGroupActivities.get(j).add(activity);
+                                mAllActivities.add(activity);
+                            }
+                            activityId++;
+                        }
+                        mDayUsed = new boolean[activityId][Constants.DAY_COUNT];
+                    }
                 }
-                activityId++;
             }
-            for (int i = 0; i < mPracticumCount; i++) {
-                for (int j = 0; j < mStudentGroups.size(); j++) {
-                    if (!mGroupActivities.containsKey(j))
-                        mGroupActivities.put(j, new HashSet<Activity>());
-                    Activity activity = new Activity(TYPE_ACTIVITY_PRACTICAL, mStudentGroups.get(j), activityId);
-                    mGroupActivities.get(j).add(activity);
-                    allActivities.add(activity);
-                }
-                activityId++;
-            }
-            mDayUsed = new boolean[activityId][Constants.DAY_COUNT];
         }
-        return allActivities;
+        return mAllActivities;
     }
 
     private int determineGroupSize() {
         return mGroupCount;
     }
 
-    public Set<Student> getCourseStudents() {
+    public ArrayList<Integer> getCourseStudents() {
         return mStudents;
     }
 
-    public ArrayList<Set<Student>> getStudentGroups() {
+    public ArrayList<ArrayList<Integer>> getStudentGroups() {
         return mStudentGroups;
     }
 
     public class Activity {
         private int mId;
         private int mType;
-        private Set<Student> mStudents;
+        private ArrayList<Integer> mStudents;
         private int mIndex;
 
-        public Activity(int type, Set<Student> students, int id) {
+        public Activity(int type, ArrayList<Integer> students, int id) {
             mId = id;
             mType = type;
             mStudents = students;
         }
 
-        public Set<Student> getStudents() {
+        public ArrayList<Integer> getStudents() {
             return mStudents;
         }
 
-        public void plan(int timeslot) {
-            mDayUsed[mId][getRoomSlot() % 20 / 4] = true;
+        public void plan(int timeslot, Schedule schedule) {
+            mDayUsed[mId][getTimeslot(schedule) / 4] = true;
         }
 
-        public int getDay() {
-            int timeSlot = getRoomSlot();
+        public int getDay(Schedule schedule) {
+            int timeSlot = getRoomSlot(schedule);
             if (timeSlot == -1) return -1;
             return timeSlot%20/4;
         }
 
-        public int getRoomSlot() {
-            return getContext().getActivitySlots()[mIndex];
+        public int getRoomSlot(Schedule schedule) {
+            return schedule.getActivitySlots()[mIndex];
         }
 
         public String getName() {
@@ -236,12 +244,16 @@ public class Course extends BaseModel {
             return mId;
         }
 
-        public int getTimeslot() {
-            return getRoomSlot() % 20;
+        public int getTimeslot(Schedule schedule) {
+            return getRoomSlot(schedule) % 20;
         }
 
         public void setIndex(int index) {
             mIndex = index;
+        }
+
+        public int getIndex() {
+            return mIndex;
         }
     }
 }

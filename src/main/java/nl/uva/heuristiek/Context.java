@@ -13,11 +13,13 @@ import java.util.*;
 public class Context {
 
     private Map<String, Course> mCourseMap;
-    private ArrayList<Student> mStudents;
+    private Map<Integer, Student> mStudents;
     private ArrayList<Course.Activity> mActivities;
-    private Schedule mSchedule;
 
-    public void init(Map<String, Course> courseMap, ArrayList<Student> students) {
+    public Context() {
+    }
+
+    public void init(Map<String, Course> courseMap, Map<Integer, Student> students) {
         mCourseMap = courseMap;
         mStudents = students;
         mActivities = new ArrayList<>(courseMap.size()*3);
@@ -27,22 +29,17 @@ public class Context {
         for (int i = 0; i < mActivities.size(); i++) {
             Course.Activity activity = mActivities.get(i);
             activity.setIndex(i);
-            Set<Student> activityStudents = activity.getStudents();
-            for (Student student : activityStudents) {
-                student.addActivity(i);
+            for (Integer student : activity.getStudents()) {
+                getStudent(student).addActivity(i);
             }
         }
-    }
-
-    public void setSchedule(Schedule schedule) {
-        mSchedule = schedule;
     }
 
     public Map<String, Course> getCourseMap() {
         return mCourseMap;
     }
 
-    public ArrayList<Student> getStudents() {
+    public Map<Integer, Student> getStudents() {
         return mStudents;
     }
 
@@ -50,16 +47,7 @@ public class Context {
         return mActivities;
     }
 
-    public int[] getActivitySlots() {
-        return mSchedule.getActivitySlots();
-    }
-
-    public void setActivitySlot(int position, int roomSlot) {
-        mSchedule.setActivitySlot(position, roomSlot);
-
-    }
-
-    public int getRoomSlot(int activityIndex) {
-        return mSchedule.getRoomSlot(activityIndex);
+    public Student getStudent(int studentId) {
+        return mStudents.get(studentId);
     }
 }

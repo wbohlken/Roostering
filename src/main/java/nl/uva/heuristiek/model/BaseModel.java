@@ -19,7 +19,7 @@ public class BaseModel {
         return mContext;
     }
 
-    protected final ArrayList<Course.Activity> getActivities() {
+    public final ArrayList<Course.Activity> getActivities() {
         return mContext.getActivities();
     }
 
@@ -27,11 +27,8 @@ public class BaseModel {
         return mContext.getCourseMap();
     }
 
-    protected final ArrayList<Student> getStudents() {
+    protected final Map<Integer, Student> getStudents() {
         return mContext.getStudents();
     }
 
-    public int getActivityDay(int activityIndex) {
-        return mContext.getActivitySlots()[activityIndex] / 20;
-    }
 }

@@ -1,6 +1,7 @@
 package nl.uva.heuristiek.view;
 
 import nl.uva.heuristiek.model.Penalty;
+import nl.uva.heuristiek.model.Schedule;
 
 import javax.swing.*;
 import java.awt.*;
@@ -13,39 +14,28 @@ import java.awt.event.ActionListener;
 public class ControlPanel extends JPanel {
 
     private final JTextPane mPenaltyPane;
-    public Penalty mPenalty;
+    private final JTextField mStepSize;
     private ControlInterface mInterface;
-    private final JButton mClimb100;
     private final JButton mClimb;
     private final JButton mComplete;
     private final JButton mNewConstructive;
     private final JButton mNewRandon;
-    private final JButton mStep10;
     private final JButton mStep;
+
 
     public ControlPanel(ControlInterface controlInterface) {
         mInterface = controlInterface;
-        mStep = new JButton("Step 1");
-        mStep10 = new JButton("Step 10");
+        mStep = new JButton("Step");
         mStep.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (mInterface != null) {
-                    mInterface.step(1);
+                    mInterface.step(Integer.parseInt(mStepSize.getText()));
                 }
             }
         });
         add(mStep);
 
-        mStep10.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mInterface != null) {
-                    mInterface.step(10);
-                }
-            }
-        });
-        add(mStep10);
 
         mNewRandon = new JButton("New Random");
         mNewRandon.addActionListener(new ActionListener() {
@@ -73,58 +63,55 @@ public class ControlPanel extends JPanel {
             public void actionPerformed(ActionEvent e) {
                 if (mInterface != null)
                     mInterface.complete();
+                setComplete(true);
 
             }
         });
         add(mComplete);
 
-        mClimb = new JButton("Climb 1");
+        mClimb = new JButton("Climb");
         mClimb.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (mInterface != null)
-                    mInterface.climb(1);
+                    new SwingWorker<Schedule, Schedule>() {
+
+                        @Override
+                        protected Schedule doInBackground() throws Exception {
+                            return null;
+                        }
+                    }.run();
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mInterface.climb(Integer.parseInt(mStepSize.getText()));
+                        }
+                    }).start();
+
             }
         });
         add(mClimb);
 
-        mClimb100 = new JButton("Climb 100");
-        mClimb100.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (mInterface != null)
-                    mInterface.climb(100);
-            }
-        });
-        add(mClimb100);
-
         mPenaltyPane = new JTextPane();
         add(mPenaltyPane);
+
+        mStepSize = new JTextField("20");
+        add(mStepSize);
 
     }
 
     public void setComplete(boolean complete) {
         mStep.setEnabled(!complete);
-        mStep10.setEnabled(!complete);
-        mClimb.setEnabled(complete);
         mClimb.setEnabled(complete);
         mComplete.setEnabled(!complete);
     }
 
 
     public void setPenalty(Penalty penalty) {
-        mPenalty = penalty;
-        if (mPenalty != null)
-            mPenaltyPane.setText(mPenalty.toString());
+        if (penalty != null)
+            mPenaltyPane.setText(penalty.toString());
     }
 
-    @Override
-    protected void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        Graphics2D g2d = (Graphics2D) g;
-        if (mPenalty != null)
-            g2d.drawString(String.format("Penalty: %d", mPenalty.getTotal()), 0, 0);
-    }
 
     public interface ControlInterface {
         boolean step(int size);

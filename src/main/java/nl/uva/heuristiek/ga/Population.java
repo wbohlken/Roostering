@@ -24,7 +24,7 @@ public class Population {
 
     public void fillPopulation() {
         while (mChromosomes.size() < Constants.MAX_POPULATION_COUNT) {
-            Schedule schedule = new Schedule(mContext, Schedule.FLAG_PLAN_METHOD_RANDOM);
+            Schedule schedule = Schedule.newInstance(mContext, Schedule.FLAG_PLAN_METHOD_RANDOM);
             schedule.plan();
             Chromosome newChromosome = new Chromosome(schedule);
             if (mBestIndex > 0 && newChromosome.getPenalty().getTotal() < mChromosomes.get(mBestIndex).getPenalty().getTotal()) {
@@ -53,6 +53,9 @@ public class Population {
     public void reproduce() {
         int parent1Index, parent2Index;
         while (mChromosomes.size() < Constants.MAX_POPULATION_COUNT) {
+            parent1Index = sRandom.nextInt(mChromosomes.size());
+            parent2Index = sRandom.nextInt(mChromosomes.size());
+            mChromosomes.add(new Chromosome(mChromosomes.get(parent1Index), mChromosomes.get(parent2Index)));
         }
     }
 

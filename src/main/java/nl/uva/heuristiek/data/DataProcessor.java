@@ -18,14 +18,14 @@ import java.util.*;
 public class DataProcessor {
 
     private static Map<String, Course> mCourseMap;
-    private static ArrayList<Student> mStudents;
+    private static Map<Integer, Student> mStudents;
 
     @NotNull
     public static Context process(File input, File vakken) {
         try {
             Context context = new Context();
             mCourseMap = new HashMap<>();
-            mStudents = new ArrayList<>(660);
+            mStudents = new HashMap<>(660);
 
             CSVReader reader = new CSVReader(new FileReader(vakken));
             String[] nextLine;
@@ -35,10 +35,10 @@ public class DataProcessor {
             reader.close();
 
             reader = new CSVReader(new FileReader(input));
-
+            reader.readNext();
             while ((nextLine = reader.readNext()) != null) {
                 Student student = new Student(context, nextLine);
-                mStudents.add(student);
+                mStudents.put(student.getId(), student);
                 for (int i = 3; i < nextLine.length; i++) {
                     Course course = mCourseMap.get(nextLine[i]);
                     if (course != null) {

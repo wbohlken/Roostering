@@ -3,6 +3,7 @@ package nl.uva.heuristiek.view;
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.model.Course;
 import nl.uva.heuristiek.model.Penalty;
+import nl.uva.heuristiek.model.Schedule;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,7 +19,7 @@ public class SchedulePanel extends JPanel {
     public SchedulePanel(ControlPanel.ControlInterface controlInterface) {
         setLayout(new GridLayout(3,3, 20, 20));
         for (int room = 0; room < Constants.ROOM_COUNT; room++) {
-            RoomSchedulePanel comp = new RoomSchedulePanel(room);
+            RoomSchedulePanel comp = new RoomSchedulePanel();
             mPanels[room] = comp;
             add(mPanels[room]);
         }
@@ -27,15 +28,36 @@ public class SchedulePanel extends JPanel {
         add(mControlPanel);
     }
 
-    public void setActivities(Course.Activity[] activities, Penalty penalty) {
-        for (RoomSchedulePanel panel : mPanels)
-            panel.setActivities(activities);
+    public void setPenalty(Penalty penalty) {
         mControlPanel.setPenalty(penalty);
-
-
     }
 
     public void setComplete(boolean complete) {
         mControlPanel.setComplete(complete);
+    }
+
+    public void reset() {
+        for (RoomSchedulePanel panel : mPanels)
+            panel.reset();
+    }
+
+    public void setSchedule(Schedule schedule) {
+        Course.Activity[] activities = new Course.Activity[Constants.ROOMSLOT_COUNT];
+        final int count = schedule.getContext().getActivities().size();
+        for (int activityIndex = 0; activityIndex < count; activityIndex++) {
+            int roomSlot = schedule.getRoomSlot(activityIndex);
+            if (roomSlot != -1)
+                activities[roomSlot] = schedule.getContext().getActivities().get(activityIndex);
+        }
+        setPenalty(schedule.getPenalty(true));
+        mControlPanel.setComplete(schedule.isComplete());
+    }
+
+    public void addActivity(int roomSlot, Course.Activity activity) {
+        mPanels[roomSlot/20].addActivity(roomSlot % 20, activity);
+    }
+
+    public void removeActivity(int roomSlot) {
+        mPanels[roomSlot/20].removeActivity(roomSlot % 20);
     }
 }

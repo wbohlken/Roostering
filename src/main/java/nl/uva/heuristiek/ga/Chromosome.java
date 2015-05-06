@@ -20,11 +20,19 @@ public class Chromosome {
         mPenalty = penalty;
     }
 
+    public Chromosome(Chromosome parent1, Chromosome parent2) {
+
+    }
+
     public int[] getActivitySlots() {
         return mActivitySlots;
     }
 
     public Penalty getPenalty() {
         return mPenalty;
+    }
+
+    public void mutate() {
+
     }
 }
