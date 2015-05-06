@@ -13,15 +13,17 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashSet;
 
-import org.jfugue.player.Player;
 
 public class Application extends JFrame implements Schedule.ScheduleStateListener {
-    Player mPlayer;
+
 
     String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
 
     HashSet<Integer[]> randomStates = new HashSet<>();
     private int mSmallestPenalty = 2000;
+    private int mSmallestStudentPenalty = 100;
+    private int mSmallestCoursePenalty = 2000;
+
     private final SchedulePanel mSchedulePanel;
     FileWriter mLogWriter;
     FileWriter mResultsLogWriter;
@@ -32,7 +34,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         setLocationRelativeTo(null);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        mPlayer = new Player();
         final File courses = new File("vakken.csv");
         final File students = new File("studenten_roostering.csv");
 
@@ -78,8 +79,15 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                         mSmallestPenalty = schedule.getPenalty();
                         bestSchedule = schedule;
                     }
+
+                    if (schedule.getStudentPenalty() < mSmallestStudentPenalty) {
+                        mSmallestStudentPenalty = schedule.getStudentPenalty();
+                    }
+                    if (schedule.getCoursePenalty() < mSmallestCoursePenalty) {
+                        mSmallestCoursePenalty = schedule.getCoursePenalty();
+                    }
                     if ( loops > 10000) break;
-                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(), mSmallestPenalty, dupilcates));
+                    log(String.format("Loops: %d, Total Penalty: %d, Student Penalty: %d, Course Penalty: %d, Smallest penalty: %d,Smallest Course penalty: %d, Smallest Student penalty: %d, Duplicates: %d", loops++, schedule.getPenalty(),  schedule.getStudentPenalty(), schedule.getCoursePenalty(), mSmallestPenalty, mSmallestCoursePenalty, mSmallestStudentPenalty, dupilcates));
                 }
                 try {
                     mLogWriter.write(gson.toJson(goodSchedules));

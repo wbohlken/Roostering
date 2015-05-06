@@ -17,6 +17,9 @@ public class Schedule {
     private Collection<Course> mCourses;
     private ArrayList<Course.Activity> mActivities;
     private int mPenalty = -1;
+    private int mStudentPenalty = -1;
+    private int mCoursePenalty = -1;
+
     private Integer[] mTimeslots;
     private Set<Course.Activity> mPenaltyActivities = new HashSet<Course.Activity>();
 
@@ -158,6 +161,27 @@ public class Schedule {
             }
         }
         return mPenalty;
+    }
+
+    public int getCoursePenalty() {
+        if (mCoursePenalty == -1) {
+            mCoursePenalty = 0;
+            for (Course course : mCourses) {
+                mCoursePenalty += course.getPenalty();
+            }
+        }
+        return mCoursePenalty;
+    }
+
+    public int getStudentPenalty() {
+        if (mStudentPenalty == -1) {
+            mStudentPenalty = 0;
+            for (Student student : mStudents) {
+                mStudentPenalty += student.getPenalty();
+            }
+
+        }
+        return mStudentPenalty;
     }
 
     public int[] getRoomOccupation() {
