@@ -49,7 +49,74 @@ public class Course extends BaseModel {
     private int getTotalActivities() {
         return mLectureCount+mWorkGroupCount+mPracticumCount;
     }
+    public synchronized void hillclimbStudents() {
+        if (mStudentGroups.size() > 2 && getStudentFitness() > 0) {
+            for (int counter = 0; counter < 100; counter++) {
+                int previousFitnessValue = getStudentFitness();
 
+                // Switch two random students between groups
+                Random random = new Random();
+                int index1 = random.nextInt(mStudentGroups.get(0).size() - 1);
+                int index2 = random.nextInt(mStudentGroups.get(1).size() - 1);
+//              Student student1 = getContext().getStudents().get(0), student2 = getContext().getStudents().get(1);
+
+                mStudentGroups.get(0).remove(index1);
+                mStudentGroups.get(1).add(index1);
+
+                mStudentGroups.get(1).remove(index2);
+                mStudentGroups.get(0).add(index2);
+//                for (Student student : mStudentGroups.get(0)) {
+//                    if (index == index1) {
+////                      student1 = student;
+//                        mStudentGroups.get(0).remove(student);
+//                        mStudentGroups.get(1).add(student);
+//                        break;
+//                    }
+//                    index++;
+//                }
+//                index = 0;
+//                for (Student student : mStudentGroups.get(1)) {
+//                    if (index == index2) {
+////                      student2 = student;
+//                        mStudentGroups.get(1).remove(student);
+//                        mStudentGroups.get(0).add(student);
+//                        break;
+//                    }
+//                    index++;
+//                }
+                int newFitnessValue = getStudentFitness();
+
+                // If the new fitness value is worse, switch the students back
+//              if (newFitnessValue >= previousFitnessValue) {
+//                  mStudentGroups.get(0).remove(student2);
+//                  mStudentGroups.get(1).add(student2);
+//                  mStudentGroups.get(1).remove(student1);
+//                  mStudentGroups.get(0).add(student1);
+//              }
+//              else {
+                System.out.println("Student fitness old: " + previousFitnessValue + ", new: " + newFitnessValue);
+//              }
+            }
+        }
+    }
+
+    private synchronized int getStudentFitness() {
+        int studentFitness = 0;
+
+        for (ArrayList<Integer> students : mStudentGroups) {
+            HashMap<String, Boolean> courses = new HashMap<>();
+            for (int studentId : students) {
+                Student student = getContext().getStudent(studentId);
+                for (Activity activity : student.getActivities()) {
+                    courses.put(activity.getCourse().getCourseId(), true);
+                }
+            }
+
+            studentFitness += courses.size();
+        }
+
+        return studentFitness;
+    }
 
     public int getPenalty(Schedule schedule) {
         int activityPenalty = 0;
