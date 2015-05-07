@@ -152,7 +152,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 
     @Override
     public void newRandom() {
-        mStepSchedule = planSchedule(Schedule.FLAG_PLAN_METHOD_RANDOM, false);
+        mStepSchedule = planSchedule(Schedule.FLAG_PLAN_METHOD_RANDOM|Schedule.FLAG_ITERATIVE_METHOD_SIMANN, false);
         mSchedulePanel.reset();
         redraw();
     }

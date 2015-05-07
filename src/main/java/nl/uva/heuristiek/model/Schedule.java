@@ -150,7 +150,8 @@ public abstract class Schedule extends BaseModel {
                     List<Course.Activity> activities = getActivities();
                     for (int i = 0; i < activities.size(); i++) {
                         int roomSlot = getRoomSlot(i);
-                        if (activities.get(i).getStudents().size() > Constants.ROOM_CAPACATIES[roomSlot/20]) smallRoomPenalty += 2000;
+                        int overload = Constants.ROOM_CAPACATIES[roomSlot/20] - activities.get(i).getStudents().size();
+                        if (overload < 0) smallRoomPenalty += overload*-1;
                     }
                     int coursePenalty = 0;
                     for (Course course : getCourseMap().values()) {
@@ -227,7 +228,7 @@ public abstract class Schedule extends BaseModel {
     }
 
     public boolean accept(int newPenaltyTotal, int oldPenaltyTotal) {
-        if ((mFlags & MASK_INTERATIVE_METHOD) == FLAG_ITERATIVE_METHOD_HILLCLIMBER || oldPenaltyTotal > 2000)
+        if ((mFlags & MASK_INTERATIVE_METHOD) == FLAG_ITERATIVE_METHOD_HILLCLIMBER)
             return newPenaltyTotal < oldPenaltyTotal;
         else {
             mTemperature = Math.max(1, mTemperature - 1);
