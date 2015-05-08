@@ -18,6 +18,10 @@ public class Student extends BaseModel {
         mActivities = new HashSet<>();
     }
 
+    public Set<Integer> getActivitiesSet() {
+        return mActivities;
+    }
+
     public void addActivity(int activityIndex) {
         mActivities.add(activityIndex);
     }

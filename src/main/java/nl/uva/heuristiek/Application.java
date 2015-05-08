@@ -12,6 +12,8 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Map;
 
 import org.jfugue.player.Player;
 
@@ -62,7 +64,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 Schedule bestSchedule = null;
                 long loops = 0;
                 while (loops++ < 1) {
-                    Schedule schedule = planSchedule(Schedule.FLAG_PLAN_METHOD_CONSTRUCTIVE, true);
+                    Schedule schedule = planSchedule(Schedule.FLAG_PLAN_METHOD_RANDOM, true);
                     try {
                         mResultsLogWriter.write(schedule.getPenalty(false) + "\n");
                     } catch (IOException e) {
@@ -71,6 +73,10 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                     if (mSmallestPenalty == null || schedule.getPenalty(false).getTotal() < mSmallestPenalty.getTotal()) {
                         mSmallestPenalty = schedule.getPenalty(false);
                         bestSchedule = schedule;
+                    }
+                    Collection<Course> courses = schedule.getContext().getCourseMap().values();
+                    for (Course course : courses) {
+                        course.hillclimbStudents(10000);
                     }
                     log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d", loops++, schedule.getPenalty(false).getTotal(), mSmallestPenalty.getTotal()));
                 }
