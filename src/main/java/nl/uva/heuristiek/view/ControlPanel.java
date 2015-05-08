@@ -74,20 +74,7 @@ public class ControlPanel extends JPanel {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (mInterface != null)
-                    new SwingWorker<Schedule, Schedule>() {
-
-                        @Override
-                        protected Schedule doInBackground() throws Exception {
-                            return null;
-                        }
-                    }.run();
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            mInterface.climb(Integer.parseInt(mStepSize.getText()));
-                        }
-                    }).start();
-
+                    mInterface.climb(Integer.parseInt(mStepSize.getText()));
             }
         });
         add(mClimb);
@@ -114,7 +101,7 @@ public class ControlPanel extends JPanel {
 
 
     public interface ControlInterface {
-        boolean step(int size);
+        void step(int size);
         void newRandom();
         void newContructive();
         void climb(int stepSize);

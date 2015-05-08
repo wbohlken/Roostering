@@ -1,6 +1,5 @@
 package nl.uva.heuristiek.model;
 
-import com.sun.istack.internal.Nullable;
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.Context;
 
@@ -9,8 +8,8 @@ import nl.uva.heuristiek.Context;
  */
 public class RandomSchedule extends Schedule {
 
-    public RandomSchedule(Context context, int flags, @Nullable Integer[] timeslots) {
-        super(context, flags);
+    public RandomSchedule(Context context, int flags, ScheduleStateListener listener) {
+        super(context, flags, listener);
     }
 
     @Override

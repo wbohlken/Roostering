@@ -1,9 +1,8 @@
 package nl.uva.heuristiek.model;
 
-import com.sun.istack.internal.Nullable;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.Context;
+import nl.uva.heuristiek.algorithm.HillClimber;
 
 import javax.swing.*;
 import java.security.SecureRandom;
@@ -12,7 +11,7 @@ import java.util.*;
 /**
  * Created by remco on 08/04/15.
  */
-public abstract class Schedule extends BaseModel {
+public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
     @SuppressWarnings("unused")
     public static final int FLAG_ACTIVITY_SORT_STUDENTS_DESC = 0x0;
@@ -29,51 +28,38 @@ public abstract class Schedule extends BaseModel {
     private static final int MASK_PLAN_METHOD = 0x1 << 2;
     private static final int MASK_INTERATIVE_METHOD = 0x3 << 5;
     protected static SecureRandom sRandom = new SecureRandom();
-    private final int mFlags;
 
     protected ScheduleStateListener mListener;
     private Penalty mPenalty = null;
     private Set<Integer> mSlotsUsed;
 
     private int[] mActivitySlots;
-    private boolean mComplete = false;
-    private int mStepActivityIndex = 0;
-    private int mTemperature = 2000;
+    private int mActivitiesPlanned = 0;
 
-    public static Schedule newInstance(Context context, int flags) {
-        return newInstance(context, flags, null);
-    }
-
-    public static Schedule newInstance(Context context, int flags, @Nullable Integer[] timeslots) {
-        switch (flags & MASK_PLAN_METHOD) {
-            case FLAG_PLAN_METHOD_RANDOM:
-                return new RandomSchedule(context, flags, timeslots);
-            default:
-                return new ConstructiveSchedule(context, flags, timeslots);
-
-        }
-    }
-
-    private SwingWorker<Boolean, Integer> mStepper = new SwingWorker<Boolean, Integer>() {
-        @Override
-        protected Boolean doInBackground() throws Exception {
-            return null;
-        }
-    };
-
-    public Schedule(Context context, int flags) {
+    public Schedule(Context context, int flags, ScheduleStateListener listener) {
         super(context);
+        mListener = listener;
         mSlotsUsed = new HashSet<>();
         mActivitySlots = new int[context.getActivities().size()];
         Arrays.fill(mActivitySlots, -1);
-        mFlags = flags;
         Collections.sort(getActivities(), getActivityComparator(flags & MASK_ACTIVITY_SORT));
-
-
     }
 
     public int[] getActivitySlots() {
         return mActivitySlots;
+    }
+
+    @Override
+    public int getFitness() {
+        int fitness = 0;
+        if (mActivitiesPlanned == getActivities().size()) fitness += 2000;
+        fitness -= getPenalty(true).getTotal();
+        fitness += getBonus();
+        return fitness;
+    }
+
+    private int getBonus() {
+        return 0;
     }
 
     private Comparator<Course.Activity> getActivityComparator(int activitySortFlag) {
@@ -116,7 +102,6 @@ public abstract class Schedule extends BaseModel {
             mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
             mListener.redraw(this, false);
         }
-        mComplete = true;
         mListener.redraw(this, true);
     }
 
@@ -128,16 +113,42 @@ public abstract class Schedule extends BaseModel {
     public boolean doSteps(int steps) {
         try {
             for (int step = 0; step < steps; step++) {
-                int activityIndex = doStep(mStepActivityIndex++);
+                int activityIndex = doStep(mActivitiesPlanned++);
                 mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
                 if (steps < 1000 || step % 1000 == 0)
-                    mListener.redraw(this, mStepActivityIndex >= getActivities().size());
+                    mListener.redraw(this, mActivitiesPlanned == getActivities().size());
             }
         } catch (IndexOutOfBoundsException e) {
-            mComplete = true;
             return false;
         }
-        return (mStepActivityIndex == getActivities().size());
+        return (mActivitiesPlanned == getActivities().size());
+    }
+
+    public void doSteps(final int steps, final Callback callback) {
+        new SwingWorker<Boolean, Integer>() {
+
+            @Override
+            protected Boolean doInBackground() throws Exception {
+                for (int step = 0; step < steps && mActivitiesPlanned < mActivitySlots.length; step++) {
+                    if (mActivitiesPlanned == getActivities().size()) break;
+                    int activityIndex = doStep(mActivitiesPlanned++);
+                    publish(activityIndex);
+                }
+                return null;
+            }
+
+            @Override
+            protected void process(List<Integer> chunks) {
+                for (Integer activityIndex : chunks)
+                    mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
+                mListener.redraw(Schedule.this, mActivitiesPlanned == mActivitySlots.length);
+            }
+
+            @Override
+            protected void done() {
+                callback.done(mActivitiesPlanned == getActivities().size());
+            }
+        }.execute();
     }
 
     protected abstract int doStep(int activityIndex);
@@ -209,32 +220,25 @@ public abstract class Schedule extends BaseModel {
         return seatOccupation;
     }
 
-    public void climbHill(int stepSize) {
-        for (int i = 0; i < stepSize; i++) {
-            Penalty oldPenalty = getPenalty(true);
-            int[] swap = swap();
-            mPenalty = null;
-            Penalty newPenalty = getPenalty(true);
-            if (!accept(newPenalty.getTotal(), oldPenalty.getTotal())) {
-                swap(swap);
-            } else {
-                mListener.activityAdded(mActivitySlots[swap[0]], getActivities().get(swap[0]));
-                mListener.activityAdded(mActivitySlots[swap[1]], getActivities().get(swap[1]));
-            }
+//    public void climbHill(int stepSize) {
+//        for (int i = 0; i < stepSize; i++) {
+//            Penalty oldPenalty = getPenalty(true);
+//            int[] swap = swap();
+//            mPenalty = null;
+//            Penalty newPenalty = getPenalty(true);
+//            if (!accept(newPenalty.getTotal(), oldPenalty.getTotal())) {
+//                swap(swap);
+//            } else {
+//                mListener.activityAdded(mActivitySlots[swap[0]], getActivities().get(swap[0]));
+//                mListener.activityAdded(mActivitySlots[swap[1]], getActivities().get(swap[1]));
+//            }
+//
+////            System.out.printf("Old: %s, New: %s\n", oldPenalty.toString(), newPenalty.toString());
+//            mListener.redraw(this, true);
+//        }
+//    }
 
-//            System.out.printf("Old: %s, New: %s\n", oldPenalty.toString(), newPenalty.toString());
-            mListener.redraw(this, true);
-        }
-    }
 
-    public boolean accept(int newPenaltyTotal, int oldPenaltyTotal) {
-        if ((mFlags & MASK_INTERATIVE_METHOD) == FLAG_ITERATIVE_METHOD_HILLCLIMBER)
-            return newPenaltyTotal < oldPenaltyTotal;
-        else {
-            mTemperature = Math.max(1, mTemperature - 1);
-            return Math.exp((oldPenaltyTotal - newPenaltyTotal)) > Math.random();
-        }
-    }
 
     public void setActivitySlot(int position, int roomSlot) {
         mActivitySlots[position] = roomSlot;
@@ -249,17 +253,18 @@ public abstract class Schedule extends BaseModel {
         return mActivitySlots[activityIndex];
     }
 
-    public int[] swap() {
-        final int activitiesSize = getActivities().size();
-        return swap(new int[]{sRandom.nextInt(activitiesSize), sRandom.nextInt(activitiesSize)});
-
+    @Override
+    public Integer[] generateRandomSwap() {
+        final int activitySize = getActivities().size();
+        return new Integer[]{sRandom.nextInt(activitySize),sRandom.nextInt(activitySize)};
     }
 
-    public int[] swap(int[] indices) {
+    @Override
+    public Integer[] swap(Integer[] indices) {
         int roomSlot1 = mActivitySlots[indices[1]];
         mActivitySlots[indices[1]] = mActivitySlots[indices[0]];
         mActivitySlots[indices[0]] = roomSlot1;
-        return new int[]{indices[1],indices[0]};
+        return new Integer[]{indices[1],indices[0]};
     }
 
     public boolean isComplete() {
@@ -273,33 +278,8 @@ public abstract class Schedule extends BaseModel {
         void removeActivity(int roomSlot);
     }
 
-    public class Stepper extends SwingWorker<Boolean, Integer> {
-        private final Object sLock = new Object();
-
-        private int mSteps;
-
-        public void run(int steps) {
-            synchronized (sLock) {
-                mSteps = steps;
-                run();
-            }
-        }
-
-        @Override
-        protected Boolean doInBackground() throws Exception {
-            synchronized (sLock) {
-                for (int i = 0; i < mSteps; i++) {
-                    int activityIndex = doStep(mStepActivityIndex++);
-                    publish(activityIndex);
-                }
-            }
-            return null;
-        }
-
-        @Override
-        protected void process(List<Integer> chunks) {
-            super.process(chunks);
-        }
+    public interface Callback {
+        void done(boolean scheduleComplete);
     }
 
 }

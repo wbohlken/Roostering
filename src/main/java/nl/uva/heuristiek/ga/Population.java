@@ -2,6 +2,7 @@ package nl.uva.heuristiek.ga;
 
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.Context;
+import nl.uva.heuristiek.model.RandomSchedule;
 import nl.uva.heuristiek.model.Schedule;
 
 import java.security.SecureRandom;
@@ -24,7 +25,7 @@ public class Population {
 
     public void fillPopulation() {
         while (mChromosomes.size() < Constants.MAX_POPULATION_COUNT) {
-            Schedule schedule = Schedule.newInstance(mContext, Schedule.FLAG_PLAN_METHOD_RANDOM);
+            Schedule schedule = new RandomSchedule(mContext, 0, null);
             schedule.plan();
             Chromosome newChromosome = new Chromosome(schedule);
             if (mBestIndex > 0 && newChromosome.getPenalty().getTotal() < mChromosomes.get(mBestIndex).getPenalty().getTotal()) {

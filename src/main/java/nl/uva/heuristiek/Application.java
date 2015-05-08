@@ -1,9 +1,8 @@
 package nl.uva.heuristiek;
 
+import nl.uva.heuristiek.algorithm.HillClimber;
 import nl.uva.heuristiek.data.DataProcessor;
-import nl.uva.heuristiek.model.Course;
-import nl.uva.heuristiek.model.Penalty;
-import nl.uva.heuristiek.model.Schedule;
+import nl.uva.heuristiek.model.*;
 import nl.uva.heuristiek.view.ControlPanel;
 import nl.uva.heuristiek.view.SchedulePanel;
 
@@ -13,6 +12,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.jfugue.player.Player;
@@ -29,7 +29,10 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     FileWriter mResultsLogWriter;
     private final File mCoursesFile;
     private final File mStudentsFile;
-    private Schedule mStepSchedule;
+    private HillClimber mHillClimber;
+
+    private Context mContext;
+    private Schedule mCurrentSchedule;
 
     public Application() {
         mMainThread = Thread.currentThread();
@@ -41,6 +44,8 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         mPlayer = new Player();
         mCoursesFile = new File("vakken.csv");
         mStudentsFile = new File("studenten_roostering.csv");
+        mContext = DataProcessor.process(mStudentsFile, mCoursesFile);
+
 
         File file = new File("highscores.json");
         File csvResults = new File("results.csv");
@@ -59,61 +64,49 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         mSchedulePanel = new SchedulePanel(this);
         add(mSchedulePanel);
 
-        Runnable target = new Runnable() {
-            public void run() {
-                Schedule bestSchedule = null;
-                long loops = 0;
-                while (loops++ < 1) {
-                    Schedule schedule = planSchedule(Schedule.FLAG_PLAN_METHOD_RANDOM, true);
-                    try {
-                        mResultsLogWriter.write(schedule.getPenalty(false) + "\n");
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    if (mSmallestPenalty == null || schedule.getPenalty(false).getTotal() < mSmallestPenalty.getTotal()) {
-                        mSmallestPenalty = schedule.getPenalty(false);
-                        bestSchedule = schedule;
-                    }
-                    Collection<Course> courses = schedule.getContext().getCourseMap().values();
-                    for (Course course : courses) {
-                        course.hillclimbStudents(1000);
-                    }
-                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d", loops++, schedule.getPenalty(false).getTotal(), mSmallestPenalty.getTotal()));
-                }
-                try {
-                    mLogWriter.close();
+        mCurrentSchedule = new ConstructiveSchedule(mContext, 0, null, this);
 
-                    mResultsLogWriter.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                log(String.format("Penalty: %s", bestSchedule.getPenalty(false).toString()));
-
-                int[] occupation = bestSchedule.getRoomOccupation();
-                int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
-
-                log("Room occupations");
-                for (int i = 0; i < occupation.length; i++) {
-                    log(i + ": " + occupation[i] + " %");
-                }
-
-                log("Average seat occupation per room");
-                for (int i = 0; i < averageSeatOccupation.length; i++) {
-                    log(i + ": " + averageSeatOccupation[i] + " %");
-                }
-            }
-        };
-        target.run();
+//        Runnable target = new Runnable() {
+//            public void run() {
+//                Schedule bestSchedule = null;
+//                long loops = 0;
+//                while (loops++ < 1) {
+//                    Schedule schedule = planSchedule(Schedule.FLAG_PLAN_METHOD_CONSTRUCTIVE, true);
+//                    try {
+//                        mResultsLogWriter.write(schedule.getPenalty(false) + "\n");
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                    if (mSmallestPenalty == null || schedule.getPenalty(false).getTotal() < mSmallestPenalty.getTotal()) {
+//                        mSmallestPenalty = schedule.getPenalty(false);
+//                        bestSchedule = schedule;
+//                    }
+//                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d", loops++, schedule.getPenalty(false).getTotal(), mSmallestPenalty.getTotal()));
+//                }
+//                try {
+//                    mLogWriter.close();
+//
+//                    mResultsLogWriter.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//                log(String.format("Penalty: %s", bestSchedule.getPenalty(false).toString()));
+//
+//                int[] occupation = bestSchedule.getRoomOccupation();
+//                int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
+//
+//                log("Room occupations");
+//                for (int i = 0; i < occupation.length; i++) {
+//                    log(i + ": " + occupation[i] + " %");
+//                }
+//
+//                log("Average seat occupation per room");
+//                for (int i = 0; i < averageSeatOccupation.length; i++) {
+//                    log(i + ": " + averageSeatOccupation[i] + " %");
+//                }
+//            }
+//        };
 //        new Thread(target).start();
-    }
-
-    public Schedule planSchedule(int flags, boolean plan) {
-        Context context = DataProcessor.process(mStudentsFile, mCoursesFile);
-        Schedule schedule = Schedule.newInstance(context, flags);
-        schedule.setListener(Application.this);
-        if (plan)
-            schedule.plan();
-        return schedule;
     }
 
     public static void main(String[] args) {
@@ -121,8 +114,14 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
             public void run() {
                 Application application = new Application();
                 application.setVisible(true);
+                System.out.println(Thread.currentThread().getId());
             }
         });
+        System.out.println(Thread.currentThread().getId());
+    }
+
+    private void resetContext() {
+        mContext = DataProcessor.process(mStudentsFile, mCoursesFile);
     }
 
     public void redraw(Schedule schedule, boolean scheduleComplete) {
@@ -146,36 +145,74 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     }
 
     @Override
-    public boolean step(int size) {
-        return mStepSchedule != null && mStepSchedule.doSteps(size);
-    }
+    public void step(int size) {
+        mCurrentSchedule.doSteps(size, new Schedule.Callback() {
+            @Override
+            public void done(boolean scheduleComplete) {
+                mSchedulePanel.setComplete(scheduleComplete);
+            }
+        });
+    };
 
     @Override
     public void newRandom() {
-        mStepSchedule = planSchedule(Schedule.FLAG_PLAN_METHOD_RANDOM|Schedule.FLAG_ITERATIVE_METHOD_SIMANN, false);
+        mCurrentSchedule = new RandomSchedule(mContext, 0, this);
         mSchedulePanel.reset();
         redraw();
     }
 
     @Override
     public void newContructive() {
-        mStepSchedule = planSchedule(Schedule.FLAG_PLAN_METHOD_CONSTRUCTIVE, false);
+        mCurrentSchedule = new ConstructiveSchedule(mContext, 0, null, this);
         mSchedulePanel.reset();
         redraw();
     }
 
     public void redraw() {
-        revalidate();
-        repaint();
+        EventQueue.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                revalidate();
+                repaint();
+            }
+        });
     }
 
     @Override
     public void complete() {
-        while (!mStepSchedule.doSteps(1));
+        mCurrentSchedule.doSteps(mContext.getActivities().size(), new Schedule.Callback() {
+            @Override
+            public void done(boolean scheduleComplete) {
+
+            }
+        });
     }
 
     @Override
     public void climb(int stepSize) {
-        mStepSchedule.climbHill(stepSize);
+        if (mHillClimber == null)
+            mHillClimber = new HillClimber(mCurrentSchedule);
+        System.out.println(Thread.currentThread().getId());
+        mHillClimber.climb(stepSize, new HillClimber.Callback() {
+            @Override
+            public void done() {
+                mSchedulePanel.setPenalty(mCurrentSchedule.getPenalty(true));
+                redraw();
+            }
+
+            @Override
+            public void swapped(List<Integer> swap) {
+                for (Integer activityIndex : swap) {
+                    activityAdded(mCurrentSchedule.getRoomSlot(activityIndex), mContext.getActivities().get(activityIndex));
+                }
+                mSchedulePanel.setPenalty(mCurrentSchedule.getPenalty(false));
+                redraw();
+            }
+
+            @Override
+            public void activityPlanned(int activityIndex) {
+
+            }
+        });
     }
 }

@@ -39,6 +39,7 @@ public class SchedulePanel extends JPanel {
     public void reset() {
         for (RoomSchedulePanel panel : mPanels)
             panel.reset();
+        mControlPanel.setComplete(false);
     }
 
     public void setSchedule(Schedule schedule) {
