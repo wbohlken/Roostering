@@ -32,6 +32,8 @@ public class Course extends BaseModel {
     private boolean[][] mDayUsed;
     private Set<Activity> mPenaltyActivities;
     private Set<Activity> mAllActivities;
+    private ArrayList<Integer> mWorkgroupGroups;
+    private ArrayList<Integer> mPracticalGroups;
 
 
     public Course(Context context, String[] csvRow) {
@@ -51,33 +53,50 @@ public class Course extends BaseModel {
     }
 
     public synchronized void hillclimbStudents(int amount) {
-        if (mStudentGroups != null && mStudentGroups.size() > 2 && getStudentFitness() > 0) {
-            for (int counter = 0; counter < amount; counter++) {
-                int previousFitnessValue = getStudentFitness();
+        ArrayList<ArrayList<Integer>> groups = new ArrayList<ArrayList<Integer>>() {{
+            add(mWorkgroupGroups);
+            add(mPracticalGroups);
+        }};
 
-                // Switch two random students between groups
-                Random random = new Random();
-                int index1 = random.nextInt(mStudentGroups.get(0).size() - 1);
-                int index2 = random.nextInt(mStudentGroups.get(1).size() - 1);
+        // Loop through both workgroups and practical groups
+        for (ArrayList<Integer> group : groups) {
+            if (group != null && group.size() > 2 && getStudentFitness() > 0) {
+                for (int counter = 0; counter < amount; counter++) {
+                    int previousFitnessValue = getStudentFitness();
 
-                mStudentGroups.get(0).remove(index1);
-                mStudentGroups.get(1).add(index1);
+                    int groupIndex1, groupIndex2;
+                    groupIndex1 = groupIndex2 = Random.nextInt(group.size() - 1);
 
-                mStudentGroups.get(1).remove(index2);
-                mStudentGroups.get(0).add(index2);
-                int newFitnessValue = getStudentFitness();
+                    while (groupIndex2 == groupIndex1) {
+                        groupIndex2 = Random.nextInt(group.size() - 1);
+                    }
 
-                // If the new fitness value is worse, switch the students back
-              if (newFitnessValue >= previousFitnessValue) {
-                  mStudentGroups.get(0).remove(index2);
-                  mStudentGroups.get(1).add(index2);
+                    groupIndex1 = group.get(groupIndex1);
+                    groupIndex2 = group.get(groupIndex2);
 
-                  mStudentGroups.get(1).remove(index1);
-                  mStudentGroups.get(0).add(index1);
-              }
-              else {
-                System.out.println(getCourseId() + ": Student fitness old: " + previousFitnessValue + ", new: " + newFitnessValue);
-              }
+                    int index1 = Random.nextInt(mStudentGroups.get(groupIndex1).size() - 1);
+                    int index2 = Random.nextInt(mStudentGroups.get(groupIndex2).size() - 1);
+
+                    // Swap students between the two groups
+                    mStudentGroups.get(groupIndex1).remove(index1);
+                    mStudentGroups.get(groupIndex2).add(index1);
+
+                    mStudentGroups.get(groupIndex2).remove(index2);
+                    mStudentGroups.get(groupIndex1).add(index2);
+
+                    int newFitnessValue = getStudentFitness();
+
+                    // If the new fitness value is worse, switch the students back
+                    if (newFitnessValue >= previousFitnessValue) {
+                        mStudentGroups.get(groupIndex1).remove(index2);
+                        mStudentGroups.get(groupIndex2).add(index2);
+
+                        mStudentGroups.get(groupIndex2).remove(index1);
+                        mStudentGroups.get(groupIndex1).add(index1);
+                    } else {
+                        System.out.println(getCourseId() + " (groups: " + mStudentGroups.size() + ") : Student fitness old: " + previousFitnessValue + ", new: " + newFitnessValue);
+                    }
+                }
             }
         }
     }
@@ -194,6 +213,8 @@ public class Course extends BaseModel {
         if (mAllActivities == null) {
             synchronized (this) {
                 if (mAllActivities == null) {
+                    mWorkgroupGroups = new ArrayList<>();
+                    mPracticalGroups = new ArrayList<>();
                     if (mStudents.size() == 0) return new HashSet<>();
                     if (mStudentGroups == null) fillGroups();
                     int activityId = 0;
@@ -213,6 +234,7 @@ public class Course extends BaseModel {
                                 Activity activity = new Activity(TYPE_ACTIVITY_WORKGROUP, mStudentGroups.get(j), activityId);
                                 mGroupActivities.get(j).add(activity);
                                 mAllActivities.add(activity);
+                                mWorkgroupGroups.add(j);
                             }
                             activityId++;
                         }
@@ -223,6 +245,7 @@ public class Course extends BaseModel {
                                 Activity activity = new Activity(TYPE_ACTIVITY_PRACTICAL, mStudentGroups.get(j), activityId);
                                 mGroupActivities.get(j).add(activity);
                                 mAllActivities.add(activity);
+                                mPracticalGroups.add(j);
                             }
                             activityId++;
                         }

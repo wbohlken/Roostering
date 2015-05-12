@@ -76,7 +76,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                     }
                     Collection<Course> courses = schedule.getContext().getCourseMap().values();
                     for (Course course : courses) {
-                        course.hillclimbStudents(10000);
+                        course.hillclimbStudents(1000);
                     }
                     log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d", loops++, schedule.getPenalty(false).getTotal(), mSmallestPenalty.getTotal()));
                 }
