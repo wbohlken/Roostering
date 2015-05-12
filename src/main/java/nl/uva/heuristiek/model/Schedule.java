@@ -31,6 +31,7 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
     protected ScheduleStateListener mListener;
     private Penalty mPenalty = null;
+    private final Object sPenaltyLock = new Object();
     private Set<Integer> mSlotsUsed;
 
     private int[] mActivitySlots;
@@ -43,6 +44,12 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
         mActivitySlots = new int[context.getActivities().size()];
         Arrays.fill(mActivitySlots, -1);
         Collections.sort(getActivities(), getActivityComparator(flags & MASK_ACTIVITY_SORT));
+    }
+
+    public Schedule(Context context, int[] acitivitySlots) {
+        super(context);
+        mActivitySlots = acitivitySlots;
+        mActivitiesPlanned = mActivitySlots.length;
     }
 
     public int[] getActivitySlots() {
@@ -91,18 +98,16 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
     }
 
-    public void setListener(ScheduleStateListener listener) {
-        mListener = listener;
-        mListener.redraw(this, false);
-    }
-
     public void plan() {
         for (int activityIndex = 0; activityIndex < getActivities().size(); activityIndex++) {
             doStep(activityIndex);
-            mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
-            mListener.redraw(this, false);
+            if (mListener != null) {
+                mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
+                mListener.redraw(this, false);
+            }
         }
-        mListener.redraw(this, true);
+        if (mListener != null)
+            mListener.redraw(this, true);
     }
 
     /**
@@ -114,9 +119,15 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
         try {
             for (int step = 0; step < steps; step++) {
                 int activityIndex = doStep(mActivitiesPlanned++);
-                mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
-                if (steps < 1000 || step % 1000 == 0)
+                if (mListener != null)
+                    mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
+                if (mListener != null && (steps < 1000 || step % 1000 == 0))
                     mListener.redraw(this, mActivitiesPlanned == getActivities().size());
+            }
+            if (steps > 0) {
+                synchronized (sPenaltyLock) {
+                    mPenalty = null;
+                }
             }
         } catch (IndexOutOfBoundsException e) {
             return false;
@@ -139,9 +150,17 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
             @Override
             protected void process(List<Integer> chunks) {
-                for (Integer activityIndex : chunks)
-                    mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
-                mListener.redraw(Schedule.this, mActivitiesPlanned == mActivitySlots.length);
+
+                if (chunks.size() > 0) {
+                    synchronized (sPenaltyLock) {
+                        mPenalty = null;
+                    }
+                }
+                if (mListener != null) {
+                    for (Integer activityIndex : chunks)
+                        mListener.activityAdded(mActivitySlots[activityIndex], getActivities().get(activityIndex));
+                    mListener.redraw(Schedule.this, mActivitiesPlanned == mActivitySlots.length);
+                }
             }
 
             @Override
@@ -153,30 +172,36 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
     protected abstract int doStep(int activityIndex);
 
-    public synchronized Penalty getPenalty(boolean forceCalculation) {
-        if (mPenalty == null || forceCalculation) {
-            synchronized (this) {
-                if (mPenalty == null || forceCalculation) {
-                    int smallRoomPenalty = 0;
-                    List<Course.Activity> activities = getActivities();
-                    for (int i = 0; i < activities.size(); i++) {
-                        int roomSlot = getRoomSlot(i);
-                        int overload = Constants.ROOM_CAPACATIES[roomSlot/20] - activities.get(i).getStudents().size();
-                        if (overload < 0) smallRoomPenalty += overload*-1;
-                    }
-                    int coursePenalty = 0;
-                    for (Course course : getCourseMap().values()) {
-                        coursePenalty += course.getPenalty(this);
-                    }
-                    int studentPenalty = 0;
-                    for (Student student : getStudents().values()) {
-                        studentPenalty += student.getPenalty(this);
-                    }
-                    mPenalty = new Penalty(coursePenalty, studentPenalty, smallRoomPenalty);
+    public Penalty getPenalty(boolean forceCalculation) {
+        synchronized (sPenaltyLock) {
+            if (mPenalty == null || forceCalculation) {
+                int smallRoomPenalty = 0;
+                List<Course.Activity> activities = getActivities();
+                int[] usedRoomSlots = new int[Constants.ROOMSLOT_COUNT];
+                for (int i = 0; i < activities.size(); i++) {
+                    int roomSlot = getRoomSlot(i);
+                    usedRoomSlots[roomSlot]++;
+                    int overload = Constants.ROOM_CAPACATIES[roomSlot / 20] - activities.get(i).getStudents().size();
+                    if (overload < 0) smallRoomPenalty += overload * -1;
                 }
+                int roomSlotPenalty = 0;
+                for(int roomSlotUsage : usedRoomSlots) {
+                    if (roomSlotUsage > 1)
+                    roomSlotPenalty += 100 * (roomSlotUsage - 1);
+                }
+                int coursePenalty = 0;
+                for (Course course : getCourseMap().values()) {
+                    coursePenalty += course.getPenalty(this);
+                }
+                int studentPenalty = 0;
+                for (Student student : getStudents().values()) {
+                    studentPenalty += student.getPenalty(this);
+                }
+                mPenalty = new Penalty(coursePenalty, studentPenalty, smallRoomPenalty, roomSlotPenalty);
             }
+
+            return mPenalty;
         }
-        return mPenalty;
     }
 
     public int[] getRoomOccupation() {

@@ -4,12 +4,13 @@ package nl.uva.heuristiek.model;
  * Created by remco on 29/04/15.
  */
 public class Penalty {
-    private int mCoursePenalty, mStudentPenalty, mSmallRoomPenalty;
+    private int mCoursePenalty, mStudentPenalty, mSmallRoomPenalty, mRoomSlotPenalty;
 
-    public Penalty(int coursePenalty, int studentPenalty, int smallRoomPenalty) {
+    public Penalty(int coursePenalty, int studentPenalty, int smallRoomPenalty, int roomSlotPenalty) {
         mCoursePenalty = coursePenalty;
         mStudentPenalty = studentPenalty;
         mSmallRoomPenalty = smallRoomPenalty;
+        mRoomSlotPenalty = roomSlotPenalty;
     }
 
     public int getCoursePenalty() {
@@ -26,6 +27,6 @@ public class Penalty {
     }
 
     public int getTotal() {
-        return mCoursePenalty+mStudentPenalty+mSmallRoomPenalty;
+        return mCoursePenalty+mStudentPenalty+mSmallRoomPenalty+mRoomSlotPenalty;
     }
 }
