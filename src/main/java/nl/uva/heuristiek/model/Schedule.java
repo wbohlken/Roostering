@@ -66,7 +66,11 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
     }
 
     private int getBonus() {
-        return 0;
+        int bonus = 0;
+        for (Course course : getCourseMap().values()) {
+            bonus += course.getBonusPoints(this);
+        }
+        return bonus;
     }
 
     private Comparator<Course.Activity> getActivityComparator(int activitySortFlag) {

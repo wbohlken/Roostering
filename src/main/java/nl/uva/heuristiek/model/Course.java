@@ -257,6 +257,75 @@ public class Course extends BaseModel {
         return mAllActivities;
     }
 
+    public int getUniqueActivityCount() {
+        int uniqueIds = 0;
+        HashMap<Integer, Boolean> activityIds = new HashMap<>();
+        Set<Activity> activities = getCourseActivities();
+        for (Activity activity : activities) {
+            if (!activityIds.containsKey(activity.getId())) {
+                uniqueIds++;
+                activityIds.put(activity.getId(), true);
+            }
+        }
+
+        return uniqueIds;
+    }
+
+    public int getBonusPoints(Schedule schedule) {
+        int bonusPoints = 0;
+
+        Set<Activity> activities = getCourseActivities();
+        HashMap<Integer, Set<Activity>> activityIds = new HashMap<>();
+
+        for (Activity activity : activities) {
+            if(!activityIds.containsKey(activity.getId())) {
+                activityIds.put(activity.getId(), new HashSet<>());
+            }
+            activityIds.get(activity.getId()).add(activity);
+        }
+        boolean[] daysUsed = new boolean[5];
+        Collection<Set<Activity>> activitySet = activityIds.values();
+        for (Set<Activity> activitiesById : activitySet) {
+            int timeslot = 4;
+            for(Activity  activity : activitiesById) {
+                if (activity.getTimeslot(schedule) / 4 < timeslot) {
+                    timeslot = activity.getTimeslot(schedule) / 4;
+                }
+            }
+            daysUsed[timeslot] = true;
+//            System.out.println(this.getName() + " " + timeslot);
+        }
+
+
+        switch (getUniqueActivityCount()) {
+            case 2:
+                if ((daysUsed[0] && daysUsed[3]) || (daysUsed[1] && daysUsed[4])) {
+                    bonusPoints = 20;
+                }
+                break;
+
+            case 3:
+                if (daysUsed[0] && daysUsed[2] && daysUsed[4]) {
+                    bonusPoints = 20;
+                }
+                break;
+
+            case 4:
+                if (daysUsed[0] && daysUsed[1] && daysUsed[3] && daysUsed[4]) {
+                    bonusPoints = 20;
+                }
+                break;
+            case 5:
+                if (daysUsed[0] && daysUsed[1] && daysUsed[2] && daysUsed[3] && daysUsed[4]) {
+                    bonusPoints = 20;
+                }
+                break;
+        }
+
+        return bonusPoints;
+    }
+
+
     private int determineGroupSize() {
         return mGroupCount;
     }
