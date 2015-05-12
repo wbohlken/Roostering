@@ -60,7 +60,7 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
     public int getFitness() {
         int fitness = 0;
         if (mActivitiesPlanned == getActivities().size()) fitness += 2000;
-        fitness -= getPenalty(true).getTotal();
+        fitness -= getPenalty().getTotal();
         fitness += getBonus();
         return fitness;
     }
@@ -172,17 +172,19 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
     protected abstract int doStep(int activityIndex);
 
-    public Penalty getPenalty(boolean forceCalculation) {
+    public Penalty getPenalty() {
         synchronized (sPenaltyLock) {
-            if (mPenalty == null || forceCalculation) {
+            if (mPenalty == null) {
                 int smallRoomPenalty = 0;
                 List<Course.Activity> activities = getActivities();
                 int[] usedRoomSlots = new int[Constants.ROOMSLOT_COUNT];
                 for (int i = 0; i < activities.size(); i++) {
                     int roomSlot = getRoomSlot(i);
-                    usedRoomSlots[roomSlot]++;
-                    int overload = Constants.ROOM_CAPACATIES[roomSlot / 20] - activities.get(i).getStudents().size();
-                    if (overload < 0) smallRoomPenalty += overload * -1;
+                    if (roomSlot >= 0) {
+                        usedRoomSlots[roomSlot]++;
+                        int overload = Constants.ROOM_CAPACATIES[roomSlot / 20] - activities.get(i).getStudents().size();
+                        if (overload < 0) smallRoomPenalty += overload * -1;
+                    }
                 }
                 int roomSlotPenalty = 0;
                 for(int roomSlotUsage : usedRoomSlots) {

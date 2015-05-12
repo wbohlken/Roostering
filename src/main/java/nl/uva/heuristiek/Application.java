@@ -2,8 +2,6 @@ package nl.uva.heuristiek;
 
 import nl.uva.heuristiek.algorithm.HillClimber;
 import nl.uva.heuristiek.data.DataProcessor;
-import nl.uva.heuristiek.ga.BaseAlgorithm;
-import nl.uva.heuristiek.ga.Chromosome;
 import nl.uva.heuristiek.ga.Config;
 import nl.uva.heuristiek.ga.ScheduleGeneticAlgorithm;
 import nl.uva.heuristiek.model.*;
@@ -15,9 +13,7 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import org.jfugue.player.Player;
 
@@ -51,18 +47,18 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         mContext = DataProcessor.process(mStudentsFile, mCoursesFile);
 
         final ScheduleGeneticAlgorithm geneticAlgorithm = new ScheduleGeneticAlgorithm(mContext, new Config().setMinPopulation(100).setMaxPopulation(200));
-        geneticAlgorithm.doLoops(100000, new BaseAlgorithm.Callback() {
-            @Override
-            public void done(BaseAlgorithm algorithm) {
-                Penalty bestPenalty = algorithm.getBest().getPenalty();
-                System.out.println(bestPenalty.toString());
-            }
-
-            @Override
-            public void iterationComplete(Chromosome best) {
-                System.out.println(best.getPenalty().getTotal());
-            }
-        });
+//        geneticAlgorithm.doLoops(100000, new BaseAlgorithm.Callback() {
+//            @Override
+//            public void done(BaseAlgorithm algorithm) {
+//                Penalty bestPenalty = algorithm.getBest().getPenalty();
+//                System.out.println(bestPenalty.toString());
+//            }
+//
+//            @Override
+//            public void iterationComplete(Chromosome best) {
+//                System.out.println(best.getPenalty().getTotal());
+//            }
+//        });
 
 
         File file = new File("highscores.json");
@@ -131,8 +127,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         EventQueue.invokeLater(new Runnable() {
             public void run() {
                 Application application = new Application();
-//                application.setVisible(true);
-                System.out.println(Thread.currentThread().getId());
+                application.setVisible(true);
             }
         });
         System.out.println(Thread.currentThread().getId());
@@ -144,7 +139,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 
     public void redraw(Schedule schedule, boolean scheduleComplete) {
         mSchedulePanel.setComplete(scheduleComplete);
-        mSchedulePanel.setPenalty(schedule.getPenalty(true));
+        mSchedulePanel.setPenalty(schedule.getPenalty());
         redraw();
     }
 
@@ -214,7 +209,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         mHillClimber.climb(stepSize, new HillClimber.Callback() {
             @Override
             public void done() {
-                mSchedulePanel.setPenalty(mCurrentSchedule.getPenalty(true));
+                mSchedulePanel.setPenalty(mCurrentSchedule.getPenalty());
                 redraw();
             }
 
@@ -223,7 +218,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 for (Integer activityIndex : swap) {
                     activityAdded(mCurrentSchedule.getRoomSlot(activityIndex), mContext.getActivities().get(activityIndex));
                 }
-                mSchedulePanel.setPenalty(mCurrentSchedule.getPenalty(false));
+                mSchedulePanel.setPenalty(mCurrentSchedule.getPenalty());
                 redraw();
             }
 

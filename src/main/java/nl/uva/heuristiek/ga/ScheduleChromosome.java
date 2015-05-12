@@ -31,7 +31,7 @@ public class ScheduleChromosome extends BaseModel implements Chromosome {
 
     @Override
     public void evaluate() {
-        mPenalty = mSchedule.getPenalty(false);
+        mPenalty = mSchedule.getPenalty();
     }
 
     public Schedule getSchedule() {

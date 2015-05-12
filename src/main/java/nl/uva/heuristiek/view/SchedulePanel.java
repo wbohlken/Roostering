@@ -50,7 +50,7 @@ public class SchedulePanel extends JPanel {
             if (roomSlot != -1)
                 activities[roomSlot] = schedule.getContext().getActivities().get(activityIndex);
         }
-        setPenalty(schedule.getPenalty(true));
+        setPenalty(schedule.getPenalty());
         mControlPanel.setComplete(schedule.isComplete());
     }
 
