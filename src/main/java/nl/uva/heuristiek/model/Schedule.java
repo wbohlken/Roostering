@@ -13,10 +13,7 @@ import java.util.*;
  */
 public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
-    @SuppressWarnings("unused")
-    public static final int FLAG_ACTIVITY_SORT_STUDENTS_DESC = 0x0;
-    public static final int FLAG_ACTIVITY_SORT_STUDENTS_ASC = 0x1;
-    public static final int FLAG_ACTIVITY_SORT_RANDOM = 0x2;
+
 
     public static final int FLAG_PLAN_METHOD_CONSTRUCTIVE = 0x0;
     public static final int FLAG_PLAN_METHOD_RANDOM = 0x1 << 2;
@@ -37,13 +34,12 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
     private int[] mActivitySlots;
     private int mActivitiesPlanned = 0;
 
-    public Schedule(Context context, int flags, ScheduleStateListener listener) {
+    public Schedule(Context context, ScheduleStateListener listener) {
         super(context);
         mListener = listener;
         mSlotsUsed = new HashSet<>();
         mActivitySlots = new int[context.getActivities().size()];
         Arrays.fill(mActivitySlots, -1);
-        Collections.sort(getActivities(), getActivityComparator(flags & MASK_ACTIVITY_SORT));
     }
 
     public Schedule(Context context, int[] acitivitySlots) {
@@ -73,34 +69,7 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
         return bonus;
     }
 
-    private Comparator<Course.Activity> getActivityComparator(int activitySortFlag) {
 
-        switch (activitySortFlag) {
-            case FLAG_ACTIVITY_SORT_RANDOM:
-                final Random random = new Random();
-                return new Comparator<Course.Activity>() {
-                    @Override
-                    public int compare(Course.Activity o1, Course.Activity o2) {
-                        return random.nextInt(2) - 1;
-                    }
-                };
-            case FLAG_ACTIVITY_SORT_STUDENTS_ASC:
-                return new Comparator<Course.Activity>() {
-                    @Override
-                    public int compare(Course.Activity o1, Course.Activity o2) {
-                        return Integer.compare(o1.getStudents().size(), o2.getStudents().size());
-                    }
-                };
-            default:
-                return new Comparator<Course.Activity>() {
-                    @Override
-                    public int compare(Course.Activity o1, Course.Activity o2) {
-                        return Integer.compare(o2.getStudents().size(), o1.getStudents().size());
-                    }
-                };
-        }
-
-    }
 
     public void plan() {
         for (int activityIndex = 0; activityIndex < getActivities().size(); activityIndex++) {
@@ -295,6 +264,9 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
         int roomSlot1 = mActivitySlots[indices[1]];
         mActivitySlots[indices[1]] = mActivitySlots[indices[0]];
         mActivitySlots[indices[0]] = roomSlot1;
+        synchronized (sPenaltyLock) {
+            mPenalty = null;
+        }
         return new Integer[]{indices[1],indices[0]};
     }
 

@@ -4,7 +4,6 @@ import com.opencsv.CSVReader;
 import com.sun.istack.internal.NotNull;
 import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.model.Course;
-import nl.uva.heuristiek.model.Schedule;
 import nl.uva.heuristiek.model.Student;
 
 import java.io.File;
@@ -48,7 +47,7 @@ public class DataProcessor {
             }
             reader.close();
 
-            context.init(mCourseMap, mStudents);
+            context.init(mCourseMap, mStudents, Context.ActivitySortMethod.DESCENDING_STUDENT_SIZE);
             return context;
         } catch (IOException e) {
             throw new RuntimeException(e);

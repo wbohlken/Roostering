@@ -9,7 +9,7 @@ import nl.uva.heuristiek.Context;
 public class RandomSchedule extends Schedule {
 
     public RandomSchedule(Context context, int flags, ScheduleStateListener listener) {
-        super(context, flags, listener);
+        super(context, listener);
     }
 
     @Override

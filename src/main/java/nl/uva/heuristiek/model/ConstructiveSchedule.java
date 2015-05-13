@@ -13,7 +13,7 @@ public class ConstructiveSchedule extends Schedule {
     protected Integer[] mRandomTimeslots;
 
     public ConstructiveSchedule(Context context, int flags, @Nullable Integer[] timeslots, ScheduleStateListener listener) {
-        super(context, flags, listener);
+        super(context, listener);
         if (timeslots == null) {
             mRandomTimeslots = new Integer[20];
             for (int i = 0; i < mRandomTimeslots.length; i++) {
