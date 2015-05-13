@@ -279,7 +279,7 @@ public class Course extends BaseModel {
 
         for (Activity activity : activities) {
             if(!activityIds.containsKey(activity.getId())) {
-                activityIds.put(activity.getId(), new HashSet<>());
+                activityIds.put(activity.getId(), new HashSet<Activity>());
             }
             activityIds.get(activity.getId()).add(activity);
         }
