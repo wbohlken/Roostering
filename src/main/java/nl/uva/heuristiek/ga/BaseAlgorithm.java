@@ -1,6 +1,5 @@
 package nl.uva.heuristiek.ga;
 
-import com.sun.istack.internal.NotNull;
 import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.model.BaseModel;
 import nl.uva.heuristiek.model.Penalty;
@@ -18,7 +17,7 @@ public abstract class BaseAlgorithm<T extends Chromosome> extends BaseModel {
     private Config mConfig;
     private List<T> mChromosomes = new ArrayList<>();
 
-    public BaseAlgorithm(@NotNull Context context, @NotNull Config config) {
+    public BaseAlgorithm(Context context, Config config) {
         super(context);
         mConfig = config;
         initPopulation();
@@ -72,6 +71,14 @@ public abstract class BaseAlgorithm<T extends Chromosome> extends BaseModel {
                 callback.done(BaseAlgorithm.this);
             }
         }.execute();
+    }
+
+    public void doLoops(int loops) {
+        for (int loop = 0; loop < loops; loop++) {
+            loop();
+            Collections.sort(mChromosomes);
+            System.out.printf("Best Chromosone: %d\n",mChromosomes.get(0).getFitness());
+        }
     }
 
     public void evaluate() {

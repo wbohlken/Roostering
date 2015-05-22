@@ -1,9 +1,6 @@
 package nl.uva.heuristiek.ga;
 
-import com.sun.istack.internal.NotNull;
 import nl.uva.heuristiek.Context;
-import nl.uva.heuristiek.model.BaseModel;
-import nl.uva.heuristiek.util.*;
 import nl.uva.heuristiek.util.Random;
 
 import java.util.*;
@@ -13,7 +10,7 @@ import java.util.*;
  */
 public class ScheduleGeneticAlgorithm extends BaseAlgorithm<ScheduleChromosome> {
 
-    public ScheduleGeneticAlgorithm(@NotNull Context context, @NotNull Config config) {
+    public ScheduleGeneticAlgorithm(Context context, Config config) {
         super(context, config);
     }
 

@@ -10,41 +10,35 @@ import nl.uva.heuristiek.view.SchedulePanel;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.Arrays;
 import java.util.List;
 
-import org.jfugue.player.Player;
 
 public class Application extends JFrame implements Schedule.ScheduleStateListener, ControlPanel.ControlInterface {
-    private Thread mMainThread;
-    Player mPlayer;
 
     String[] notes = new String[] {"A", "B", "C", "D", "E", "F", "G"};
 
     private Penalty mSmallestPenalty = null;
     private final SchedulePanel mSchedulePanel;
-    FileWriter mLogWriter;
-    FileWriter mResultsLogWriter;
-    private final File mCoursesFile;
-    private final File mStudentsFile;
+    private FileWriter mLogWriter;
+    private FileWriter mResultsLogWriter;
+//    private final File mCoursesFile;
+//    private final File mStudentsFile;
     private HillClimber mHillClimber;
 
     private Context mContext;
     private Schedule mCurrentSchedule;
 
     public Application() {
-        mMainThread = Thread.currentThread();
         setTitle("Simple example");
         setSize(1280, 1024);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 
-        mPlayer = new Player();
-        mCoursesFile = new File("vakken.csv");
-        mStudentsFile = new File("studenten_roostering.csv");
-        mContext = DataProcessor.process(mStudentsFile, mCoursesFile);
+        final InputStream coursesIS = ClassLoader.getSystemResourceAsStream("vakken.csv");
+        final InputStream studentsIS = ClassLoader.getSystemResourceAsStream("studenten_roostering.csv");
+        mContext = DataProcessor.process(new InputStreamReader(coursesIS), new InputStreamReader(studentsIS));
 
         final ScheduleGeneticAlgorithm geneticAlgorithm = new ScheduleGeneticAlgorithm(mContext, new Config().setMinPopulation(100).setMaxPopulation(200));
 //        geneticAlgorithm.doLoops(100000, new BaseAlgorithm.Callback() {
@@ -60,81 +54,149 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
 //            }
 //        });
 
-
         File file = new File("highscores.json");
         File csvResults = new File("results.csv");
 
         try {
             if (file.exists()) file.delete();
             file.createNewFile();
-                mLogWriter = new FileWriter(file);
+            mLogWriter = new FileWriter(file);
             if (csvResults.exists()) csvResults.delete();
             csvResults.createNewFile();
             mResultsLogWriter = new FileWriter(csvResults);
         } catch (IOException e) {
-            e.printStackTrace();
         }
+
+//        for (int i = 0; i < 10; i++) {
+//            final Schedule schedule = new RandomSchedule(mContext, 0, null);
+//            schedule.doSteps(mContext.getActivities().size());
+//            final HillClimber hillClimber = new HillClimber(schedule, HillClimber.Type.HillClimber);
+//            int loops = 100000;
+//            final StringBuilder results = new StringBuilder(loops*5);
+//            final int iteration = i;
+//            hillClimber.climb(loops, new HillClimber.SyncCallback() {
+//                @Override
+//                public void publish(Integer[] swap, int currentStep, int currentBest, int globalBest, int bestCount, int temperature) {
+//                    if (results.length() > 0) results.append(',');
+//                    final int total = schedule.getFitness();
+//                    System.out.println(total+"\t"+globalBest+"\t"+currentBest+'\t'+bestCount+'\t'+currentStep+'\t'+iteration);
+//                    results.append(total);
+//
+//                }
+//            });
+//            System.out.println("Penalty: "+schedule.getPenalty().getTotal());
+//            results.append('\n');
+//            try {
+//                mResultsLogWriter.write(results.toString());
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+
+
 
         mSchedulePanel = new SchedulePanel(this);
         add(mSchedulePanel);
 
         mCurrentSchedule = new ConstructiveSchedule(mContext, 0, null, this);
-
-//        Runnable target = new Runnable() {
-//            public void run() {
-//                Schedule bestSchedule = null;
-//                long loops = 0;
-//                while (loops++ < 1) {
-//                    Schedule schedule = planSchedule(Schedule.FLAG_PLAN_METHOD_CONSTRUCTIVE, true);
-//                    try {
-//                        mResultsLogWriter.write(schedule.getPenalty(false) + "\n");
-//                    } catch (IOException e) {
-//                        e.printStackTrace();
-//                    }
-//                    if (mSmallestPenalty == null || schedule.getPenalty(false).getTotal() < mSmallestPenalty.getTotal()) {
-//                        mSmallestPenalty = schedule.getPenalty(false);
-//                        bestSchedule = schedule;
-//                    }
-//                    log(String.format("Loops: %d, Penalty: %d, Smallest penalty: %d", loops++, schedule.getPenalty(false).getTotal(), mSmallestPenalty.getTotal()));
-//                }
-//                try {
-//                    mLogWriter.close();
-//
-//                    mResultsLogWriter.close();
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//                log(String.format("Penalty: %s", bestSchedule.getPenalty(false).toString()));
-//
-//                int[] occupation = bestSchedule.getRoomOccupation();
-//                int[] averageSeatOccupation = bestSchedule.getSeatOccupationPerRoom();
-//
-//                log("Room occupations");
-//                for (int i = 0; i < occupation.length; i++) {
-//                    log(i + ": " + occupation[i] + " %");
-//                }
-//
-//                log("Average seat occupation per room");
-//                for (int i = 0; i < averageSeatOccupation.length; i++) {
-//                    log(i + ": " + averageSeatOccupation[i] + " %");
-//                }
-//            }
-//        };
-//        new Thread(target).start();
     }
 
     public static void main(String[] args) {
-        EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                Application application = new Application();
-                application.setVisible(true);
+        if (!Arrays.asList(args).contains("-ui")) {
+            try {
+                Schedule.Type method = Schedule.Type.Random;
+                int iterations = 1;
+                int studentHillClimbLoops = 0;
+                int createSchedules = 101;
+                int hillClimbLoops = 0;
+                HillClimber.Type hillClimberType = HillClimber.Type.HillClimber;
+                for (int i = 0; i < args.length; i++) {
+                    if ("--method".equals(args[i])) {
+                        method = Schedule.Type.valueOf(args[i + 1]);
+                    } else if ("--schedules".equals(args[i])) {
+                        createSchedules = Integer.parseInt(args[i + 1]);
+                    } else if ("--iterations".equals(args[i])) {
+                        iterations = Integer.parseInt(args[i + 1]);
+                    } else if ("--shc".equals(args[i])) {
+                        studentHillClimbLoops = Integer.parseInt(args[i + 1]);
+                    } else if ("--hc".equals(args[i])) {
+                        hillClimbLoops = Integer.parseInt(args[i + 1]);
+                    } else if ("--hct".equals(args[i])) {
+                        hillClimberType = HillClimber.Type.valueOf(args[i + 1]);
+                        if (hillClimberType == HillClimber.Type.SimulatedAnnealing) {
+                            hillClimberType.setInitialTemperature(Integer.parseInt(args[i + 2]));
+                        }
+                    }
+                }
+                int defaultStudentHillClimb = 10000;
+                int defaultHillClimb = 150000;
+
+                final boolean constr = false;
+                final boolean hillClimber = true;
+                final boolean simAnn = true;
+
+
+                if (constr) {
+                    new HeadlessApplication(method, iterations, studentHillClimbLoops, createSchedules, hillClimbLoops, hillClimberType);
+                    new HeadlessApplication(Schedule.Type.Random, 1, 0, 100000, 0, HillClimber.Type.HillClimber);
+                    new HeadlessApplication(Schedule.Type.Random, 1, defaultStudentHillClimb, 100000, 0, HillClimber.Type.HillClimber);
+                    new HeadlessApplication(Schedule.Type.Constructive, 1, 0, 100000, 0, HillClimber.Type.HillClimber);
+                    new HeadlessApplication(Schedule.Type.Constructive, 1, defaultStudentHillClimb, 100000, 0, HillClimber.Type.HillClimber);
+                }
+
+                final int hcIterations = 50;
+                if (hillClimber) {
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.HillClimber);
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.HillClimberPlus);
+                }
+                if (simAnn) {
+                    new HeadlessApplication(Schedule.Type.Random, 1, 0, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(1));
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(10000));
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(50000));
+                }
+                if (hillClimber) {
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.HillClimber);
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.HillClimberPlus);
+                }
+                if (simAnn) {
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(1));
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(10000));
+                    new HeadlessApplication(Schedule.Type.Random, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(50000));
+                }
+                if (hillClimber) {
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.HillClimber);
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.HillClimberPlus);
+                }
+                if (simAnn) {
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(1));
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(10000));
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, 0, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(50000));
+                }
+                if (hillClimber) {
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.HillClimber);
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.HillClimberPlus);
+                }
+                if (simAnn) {
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(1));
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(10000));
+                    new HeadlessApplication(Schedule.Type.Constructive, hcIterations, defaultStudentHillClimb, 1, defaultHillClimb, HillClimber.Type.SimulatedAnnealing.setInitialTemperature(50000));
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        });
-        System.out.println(Thread.currentThread().getId());
+        } else {
+            EventQueue.invokeLater(new Runnable() {
+                public void run() {
+                    Application application = new Application();
+                    application.setVisible(true);
+                }
+            });
+        }
     }
 
     private void resetContext() {
-        mContext = DataProcessor.process(mStudentsFile, mCoursesFile);
+//        mContext = DataProcessor.process(new FileReader(mCoursesFile), new FileReader(mStudentsFile));
     }
 
     public void redraw(Schedule schedule, boolean scheduleComplete) {
@@ -148,10 +210,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
         mSchedulePanel.addActivity(roomSlot, activity);
     }
 
-    @Override
-    public void removeActivity(int roomSlot) {
-        mSchedulePanel.removeActivity(roomSlot);
-    }
 
     public static void log(String message) {
 //        System.out.println(message);
@@ -204,7 +262,7 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
     @Override
     public void climb(int stepSize) {
         if (mHillClimber == null)
-            mHillClimber = new HillClimber(mCurrentSchedule);
+            mHillClimber = new HillClimber(mCurrentSchedule, HillClimber.Type.HillClimber);
         System.out.println(Thread.currentThread().getId());
         mHillClimber.climb(stepSize, new HillClimber.Callback() {
             @Override
@@ -220,11 +278,6 @@ public class Application extends JFrame implements Schedule.ScheduleStateListene
                 }
                 mSchedulePanel.setPenalty(mCurrentSchedule.getPenalty());
                 redraw();
-            }
-
-            @Override
-            public void activityPlanned(int activityIndex) {
-
             }
         });
     }

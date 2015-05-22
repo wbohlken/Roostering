@@ -3,6 +3,8 @@ package nl.uva.heuristiek.model;
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.algorithm.HillClimber;
+import nl.uva.heuristiek.util.*;
+import nl.uva.heuristiek.util.Random;
 
 import javax.swing.*;
 import java.security.SecureRandom;
@@ -81,6 +83,11 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
         }
         if (mListener != null)
             mListener.redraw(this, true);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(mActivitySlots);
     }
 
     /**
@@ -256,7 +263,7 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
     @Override
     public Integer[] generateRandomSwap() {
         final int activitySize = getActivities().size();
-        return new Integer[]{sRandom.nextInt(activitySize),sRandom.nextInt(activitySize)};
+        return new Integer[]{sRandom.nextInt(activitySize), sRandom.nextInt(activitySize)};
     }
 
     @Override
@@ -264,10 +271,8 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
         int roomSlot1 = mActivitySlots[indices[1]];
         mActivitySlots[indices[1]] = mActivitySlots[indices[0]];
         mActivitySlots[indices[0]] = roomSlot1;
-        synchronized (sPenaltyLock) {
-            mPenalty = null;
-        }
-        return new Integer[]{indices[1],indices[0]};
+        mPenalty = null;
+        return new Integer[]{indices[1], indices[0]};
     }
 
     public boolean isComplete() {
@@ -276,13 +281,15 @@ public abstract class Schedule extends BaseModel implements HillClimber.Target {
 
     public interface ScheduleStateListener {
         void redraw(Schedule schedule, boolean scheduleComplete);
-
         void activityAdded(int roomSlot, Course.Activity activity);
-        void removeActivity(int roomSlot);
     }
 
     public interface Callback {
         void done(boolean scheduleComplete);
+    }
+
+    public enum Type {
+        Constructive, Random
     }
 
 }

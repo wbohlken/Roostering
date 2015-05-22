@@ -1,14 +1,13 @@
 package nl.uva.heuristiek.data;
 
 import com.opencsv.CSVReader;
-import com.sun.istack.internal.NotNull;
 import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.model.Course;
 import nl.uva.heuristiek.model.Student;
 
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.*;
 
 /**
@@ -19,21 +18,20 @@ public class DataProcessor {
     private static Map<String, Course> mCourseMap;
     private static Map<Integer, Student> mStudents;
 
-    @NotNull
-    public static Context process(File input, File vakken) {
+    public static Context process(Reader courseFileReader, Reader studentsFileReader) {
         try {
             Context context = new Context();
             mCourseMap = new HashMap<>();
             mStudents = new HashMap<>(660);
 
-            CSVReader reader = new CSVReader(new FileReader(vakken));
+            CSVReader reader = new CSVReader(courseFileReader);
             String[] nextLine;
             while ((nextLine = reader.readNext()) != null) {
                 mCourseMap.put(nextLine[1], new Course(context, nextLine));
             }
             reader.close();
 
-            reader = new CSVReader(new FileReader(input));
+            reader = new CSVReader(studentsFileReader);
             reader.readNext();
             while ((nextLine = reader.readNext()) != null) {
                 Student student = new Student(context, nextLine);

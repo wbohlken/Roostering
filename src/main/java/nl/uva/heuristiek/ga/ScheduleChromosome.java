@@ -9,7 +9,7 @@ import nl.uva.heuristiek.model.*;
 public class ScheduleChromosome extends BaseModel implements Chromosome {
 
     private Schedule mSchedule;
-    private Penalty mPenalty;
+    private Integer mFitness;
 
     public ScheduleChromosome(Context context) {
         super(context);
@@ -23,15 +23,15 @@ public class ScheduleChromosome extends BaseModel implements Chromosome {
     }
 
     @Override
-    public Penalty getPenalty() {
-        if (mPenalty == null)
-            evaluate();
-        return mPenalty;
+    public void evaluate() {
+        if (mFitness == null)
+            mFitness = mSchedule.getFitness();
     }
 
     @Override
-    public void evaluate() {
-        mPenalty = mSchedule.getPenalty();
+    public int getFitness() {
+        evaluate();
+        return mFitness;
     }
 
     public Schedule getSchedule() {
@@ -40,6 +40,6 @@ public class ScheduleChromosome extends BaseModel implements Chromosome {
 
     @Override
     public int compareTo(Chromosome o) {
-        return Integer.compare(getPenalty().getTotal(), o.getPenalty().getTotal());
+        return Integer.compare(o.getFitness(), getFitness());
     }
 }

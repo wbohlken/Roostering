@@ -1,0 +1,41 @@
+Complete roosters:
+	Random: 100.000 roosters
+		Met student hillclimber 10.000
+		Zonder student hillclimber
+	Constructive
+		Met student hillclimber 10.000
+		Zonder student hillclimber
+Iteratief
+	Altijd 50.000 stappen
+	Begin met:
+		Beste uit 100 constructieve
+		Een random
+	HillClimber 100
+	HillClimberPlus 100
+	Simmulated Annealing 100
+
+
+Done    --method Random                                         --schedules 100000
+Done    --method Random                             --shc 10000 --schedules 100000
+Done    --method Random           --iterations 100 	            --schedules 1 	    --hc 50000
+Done    --method Random           --iterations 100 	            --schedules 1 	    --hc 50000  --hct HillClimberPlus
+        --method Random           --iterations 100 	            --schedules 1 	    --hc 50000  --hct SimulatedAnnealing 1
+        --method Random           --iterations 100 	            --schedules 1 	    --hc 50000  --hct SimulatedAnnealing 10000
+        --method Random           --iterations 100 	            --schedules 1 	    --hc 50000  --hct SimulatedAnnealing 50000
+Remco   --method Random           --iterations 100  --shc 10000 --schedules 1       --hc 50000
+Remco   --method Random           --iterations 100  --shc 10000 --schedules 1       --hc 50000  --hct HillClimberPlus
+        --method Random           --iterations 100  --shc 10000 --schedules 1       --hc 50000  --hct SimulatedAnnealing 1
+        --method Random           --iterations 100  --shc 10000 --schedules 1       --hc 50000  --hct SimulatedAnnealing 10000
+        --method Random           --iterations 100  --shc 10000 --schedules 1       --hc 50000  --hct SimulatedAnnealing 50000
+Done    --method Constructive                       --shc 10000 --schedules 100000
+Done    --method Constructive 	        				        --schedules 100000
+Desktop2    --method Constructive 	  --iterations 100 	                                --hc 50000
+Desktop1    --method Constructive     --iterations 100 	                                --hc 50000  --hct HillClimberPlus
+        --method Constructive     --iterations 100 	                                --hc 50000  --hct SimulatedAnnealing 1
+        --method Constructive     --iterations 100 	                                --hc 50000  --hct SimulatedAnnealing 10000
+        --method Constructive     --iterations 100 	                                --hc 50000  --hct SimulatedAnnealing 50000
+Done    --method Constructive     --iterations 100  --shc 10000                     --hc 50000
+Remco   --method Constructive     --iterations 100  --shc 10000                     --hc 50000  --hct HillClimberPlus
+        --method Constructive     --iterations 100  --shc 10000                     --hc 50000  --hct SimulatedAnnealing 1
+        --method Constructive     --iterations 100  --shc 10000                     --hc 50000  --hct SimulatedAnnealing 10000
+        --method Constructive     --iterations 100  --shc 10000                     --hc 50000  --hct SimulatedAnnealing 50000

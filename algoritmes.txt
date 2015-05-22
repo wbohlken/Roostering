@@ -1,0 +1,31 @@
+Complete roosters:
+	Random: 100.000 roosters
+		Met student hillclimber 10.000
+		Zonder student hillclimber
+	Constructive
+		Met student hillclimber 10.000
+		Zonder student hillclimber
+Iteratief
+	Altijd 50.000 stappen
+	Begin met:
+		Beste uit 100 constructieve
+		Een random
+	HillClimber 100
+	HillClimberPlus 100
+	Simmulated Annealing 100
+	
+	
+Wouter: --method Random --schedules 100000 --shc 10000
+Wouter: --method Random --schedules 100000
+Wouter: --method Constructive --schedules 100000 --shc 10000
+Wouter: --method Constructive --schedules 100000
+Wouter: --iterations 100 --method Random --schedules 1 --hc 50000
+Wouter: --iterations 100 --method Random --schedules 1 --hc 50000 --hct HillClimberPlus
+--iterations 100 --method Random --schedules 1 --hc 50000 --hct SimulatedAnnealing 1
+--iterations 100 --method Random --schedules 1 --hc 50000 --hct SimulatedAnnealing 10000
+--iterations 100 --method Random --schedules 1 --hc 50000 --hct SimulatedAnnealing 50000
+--iterations 100 --method Contructive --hc 50000
+--iterations 100 --method Contructive --hc 50000 --hct HillClimberPlus
+--iterations 100 --method Contructive --hc 50000 --hct SimulatedAnnealing 1
+--iterations 100 --method Contructive --hc 50000 --hct SimulatedAnnealing 10000
+--iterations 100 --method Contructive --hc 50000 --hct SimulatedAnnealing 50000

@@ -78,21 +78,21 @@ public class Course extends BaseModel {
                     int index2 = Random.nextInt(mStudentGroups.get(groupIndex2).size() - 1);
 
                     // Swap students between the two groups
-                    mStudentGroups.get(groupIndex1).remove(index1);
-                    mStudentGroups.get(groupIndex2).add(index1);
-
-                    mStudentGroups.get(groupIndex2).remove(index2);
-                    mStudentGroups.get(groupIndex1).add(index2);
+                    Integer student1 = mStudentGroups.get(groupIndex1).remove(index1);
+                    Integer student2 = mStudentGroups.get(groupIndex2).remove(index2);
+                    mStudentGroups.get(groupIndex1).add(student2);
+                    mStudentGroups.get(groupIndex2).add(student1);
 
                     int newFitnessValue = getStudentFitness();
 
                     // If the new fitness value is worse, switch the students back
                     if (newFitnessValue >= previousFitnessValue) {
-                        mStudentGroups.get(groupIndex1).remove(index2);
-                        mStudentGroups.get(groupIndex2).add(index2);
+                        mStudentGroups.get(groupIndex1).remove(student2);
+                        mStudentGroups.get(groupIndex2).remove(student1);
 
-                        mStudentGroups.get(groupIndex2).remove(index1);
-                        mStudentGroups.get(groupIndex1).add(index1);
+                        mStudentGroups.get(groupIndex1).add(student1);
+                        mStudentGroups.get(groupIndex2).add(student2);
+
                     } else {
                         System.out.println(getCourseId() + " (groups: " + mStudentGroups.size() + ") : Student fitness old: " + previousFitnessValue + ", new: " + newFitnessValue);
                     }

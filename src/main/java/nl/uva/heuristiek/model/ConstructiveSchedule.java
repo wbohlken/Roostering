@@ -1,6 +1,5 @@
 package nl.uva.heuristiek.model;
 
-import com.sun.istack.internal.Nullable;
 import nl.uva.heuristiek.Constants;
 import nl.uva.heuristiek.Context;
 import nl.uva.heuristiek.Util;
@@ -12,7 +11,7 @@ public class ConstructiveSchedule extends Schedule {
 
     protected Integer[] mRandomTimeslots;
 
-    public ConstructiveSchedule(Context context, int flags, @Nullable Integer[] timeslots, ScheduleStateListener listener) {
+    public ConstructiveSchedule(Context context, int flags, Integer[] timeslots, ScheduleStateListener listener) {
         super(context, listener);
         if (timeslots == null) {
             mRandomTimeslots = new Integer[20];
